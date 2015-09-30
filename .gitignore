@@ -194,3 +194,9 @@ FakesAssemblies/
 
 # Visual Studio 6 workspace options file
 *.opt
+
+# Added ignores for Unreal Engine 4 project
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
