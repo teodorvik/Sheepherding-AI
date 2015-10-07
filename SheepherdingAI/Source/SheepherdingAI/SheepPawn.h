@@ -25,8 +25,7 @@ public:
 	UPROPERTY(EditAnywhere)
 	USceneComponent* OurVisibleComponent;
 
-	void SetVelocity(FVector vel);
-
+	void SetSheepVelocity(FVector vel);
 	FVector GetSheepVelocity();
 
 private:

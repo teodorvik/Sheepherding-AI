@@ -59,14 +59,13 @@ void ADogPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 
 void ADogPawn::Move_XAxis(float AxisValue)
 {
-	// Move at 100 units per second forward or backward
-	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
+	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
 }
 
 void ADogPawn::Move_YAxis(float AxisValue)
 {
 	// Move at 100 units per second right or left
-	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
+	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
 }
 
 void ADogPawn::ActivateSunShine(){

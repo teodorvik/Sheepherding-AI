@@ -2,6 +2,9 @@
 
 #pragma once
 #include <vector>
+
+#include "SheepPawn.h"
+#include "DogPawn.h"
 #include "GameFramework/Actor.h"
 #include "HerdActor.generated.h"
 
@@ -20,16 +23,45 @@ public:
 	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
-	/** Get names and positions of all actors */
+	// Store references to all sheep (called from blueprint)
 	UFUNCTION(BlueprintCallable, Category = "Herd")
-		void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
+	void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
+
+	UFUNCTION(BlueprintCallable, Category = "Herd")
+	void SetDog(UPARAM(ref) class ADogPawn* &dog);
 
 private:
-	const float avoidanceWeight = 10.0;
-	const float alignmentWeight = 0.0;
-	const float cohesionWeight = 0.5;
-	const float maxDistance = 500.0;
+	// Set flocking properties from the editor
+	UPROPERTY(EditAnywhere)
+	float separationWeight;
+	UPROPERTY(EditAnywhere)
+	float alignmentWeight;
+	UPROPERTY(EditAnywhere)
+	float cohesionWeight;
+	UPROPERTY(EditAnywhere)
+	float cohesionDistance;
+	UPROPERTY(EditAnywhere)
+	float cohesionDamping;
+	UPROPERTY(EditAnywhere)
+	float desiredSeparation;
+	UPROPERTY(EditAnywhere)
+	float alignmentDistance;
+	UPROPERTY(EditAnywhere)
+	float maxForce;
+	UPROPERTY(EditAnywhere)
+	float maxSpeed;
+	UPROPERTY(EditAnywhere)
+	float dogDistance;
+	UPROPERTY(EditAnywhere)
+	float dogSeparationWeight;
 
 	TArray<class ASheepPawn*> sheepArray;
+	ADogPawn* dog;
+
+	FVector Separate(int index);
+	FVector Align(int index);
+	FVector Cohere(int index);
+	FVector DogSeparate(int index);
+	FVector SteerTo(int index, FVector target);
 	
 };

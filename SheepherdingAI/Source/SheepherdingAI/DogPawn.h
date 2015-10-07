@@ -39,5 +39,9 @@ public:
 
 	// Input variables
 	FVector CurrentVelocity;
+
+	UPROPERTY(EditAnywhere)
+		float speed;
+
 	
 };

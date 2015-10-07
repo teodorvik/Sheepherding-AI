@@ -28,7 +28,7 @@ FVector ASheepPawn::GetSheepVelocity() {
 	return velocity;
 }
 
-void ASheepPawn::SetVelocity(FVector vel) {
+void ASheepPawn::SetSheepVelocity(FVector vel) {
 	velocity = vel;
 }
 
