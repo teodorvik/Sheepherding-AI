@@ -25,7 +25,7 @@ public:
 		void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
 
 private:
-	const float avoidanceWeight = 1.0;
+	const float avoidanceWeight = 10.0;
 	const float alignmentWeight = 0.0;
 	const float cohesionWeight = 0.5;
 	const float maxDistance = 500.0;

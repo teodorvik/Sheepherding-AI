@@ -22,7 +22,8 @@ void AHerdActor::BeginPlay()
 }
 
 FVector Avoid(FVector diff){
-	return FVector(1.f, 1.f, 1.f)/(diff*diff);
+	float diffFloat = diff.Size();
+	return diff / (diffFloat*diffFloat);
 }
 
 // Called every frame
@@ -37,9 +38,7 @@ void AHerdActor::Tick( float DeltaTime )
 	std::vector<FVector> avoidanceVec;
 	avoidanceVec.reserve(sheepArray.Num());
 
-	UE_LOG(LogTemp, Warning, TEXT("Number of sheepos: %d"), sheepArray.Num());
-
-	//For each sheep in sheepArray
+	////For each sheep in sheepArray
 	for (int i = 0; i < sheepArray.Num(); i++) {
 		int count = 0;
 		speedDiff[i] = FVector(0.f, 0.f, 0.f);
@@ -48,7 +47,7 @@ void AHerdActor::Tick( float DeltaTime )
 
 		// Our precious sheep
 		ASheepPawn* sheep = sheepArray[i];
-		
+
 		// Calculate nearby sheeps
 		for (int j = 0; j < sheepArray.Num(); j++) {
 			// Compare with another sheep
@@ -73,6 +72,7 @@ void AHerdActor::Tick( float DeltaTime )
 	}
 
 	for (int i = 0; i < sheepArray.Num(); i++) {
+		UE_LOG(LogTemp, Warning, TEXT("Second loop"));
 		ASheepPawn* sheep = sheepArray[i];
 
 		FVector oldVelocity = sheep->GetVelocity();
@@ -83,7 +83,9 @@ void AHerdActor::Tick( float DeltaTime )
 			+ avoidanceVec[i] * avoidanceWeight;
 		FVector newLocation = oldLocation + newVelocity * DeltaTime;
 		sheepArray[i]->SetActorLocation(newLocation);
-		// UE_LOG(LogTemp, Warning, TEXT("Sheep's Location is %s"), *(newLocation.ToString()));
+		UE_LOG(LogTemp, Warning, TEXT("Sheep's old location is %s"), *(oldLocation.ToString()));
+		UE_LOG(LogTemp, Warning, TEXT("Sheep's new location is %s"), *(newLocation.ToString()));
+		UE_LOG(LogTemp, Warning, TEXT("Sheep's avoidanceVec is %s"), *(avoidanceVec[i].ToString()));
 
 	}
 }
