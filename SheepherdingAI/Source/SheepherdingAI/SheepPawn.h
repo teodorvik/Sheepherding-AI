@@ -3,16 +3,15 @@
 #pragma once
 
 #include "GameFramework/Pawn.h"
-#include "DogPawn.generated.h"
+#include "SheepPawn.generated.h"
 
 UCLASS()
-class SHEEPHERDINGAI_API ADogPawn : public APawn
+class SHEEPHERDINGAI_API ASheepPawn : public APawn
 {
 	GENERATED_BODY()
-
 public:
 	// Sets default values for this pawn's properties
-	ADogPawn();
+	ASheepPawn();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -24,20 +23,13 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
 	UPROPERTY(EditAnywhere)
-		USceneComponent* OurVisibleComponent;
+	USceneComponent* OurVisibleComponent;
 
-	/** Hello this is the description */
-	UFUNCTION(BlueprintCallable, Category = "SunShine")
-		void ActivateSunShine();
+	void SetVelocity(FVector vel);
 
-	UFUNCTION(BlueprintCallable, Category = "SunShine")
-		void MySuperClass();
+	FVector GetSheepVelocity();
 
-	// Input functions
-	void Move_XAxis(float AxisValue);
-	void Move_YAxis(float AxisValue);
-
-	// Input variables
-	FVector CurrentVelocity;
+private:
+	FVector velocity;
 	
 };

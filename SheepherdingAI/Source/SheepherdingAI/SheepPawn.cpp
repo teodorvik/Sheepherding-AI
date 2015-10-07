@@ -1,17 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SheepherdingAI.h"
-#include "DogPawn.h"
+#include "SheepPawn.h"
 
 
 // Sets default values
-ADogPawn::ADogPawn()
+ASheepPawn::ASheepPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-	// Set this pawn to be controlled by the lowest-numbered player
-	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
 	// Create a dummy root component we can attach things to.
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
@@ -23,56 +20,36 @@ ADogPawn::ADogPawn()
 	//OurCamera->SetRelativeLocation(FVector(-250.0f, 0.0f, 250.0f));
 	//OurCamera->SetRelativeRotation(FRotator(-45.0f, 0.0f, 0.0f));
 	OurVisibleComponent->AttachTo(RootComponent);
+
+	velocity = FVector(0.f, 0.f, 0.f);
+}
+
+FVector ASheepPawn::GetSheepVelocity() {
+	return velocity;
+}
+
+void ASheepPawn::SetVelocity(FVector vel) {
+	velocity = vel;
 }
 
 // Called when the game starts or when spawned
-void ADogPawn::BeginPlay()
+void ASheepPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
 }
 
 // Called every frame
-void ADogPawn::Tick( float DeltaTime )
+void ASheepPawn::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	// Handle movement based on our "MoveX" and "MoveY" axes
-	{
-		if (!CurrentVelocity.IsZero())
-		{
-			FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
-			SetActorLocation(NewLocation);
-		}
-	}
 }
 
 // Called to bind functionality to input
-void ADogPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent)
+void ASheepPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	Super::SetupPlayerInputComponent(InputComponent);
 
-	// Respond every frame to the values of our two movement axes, "MoveX" and "MoveY".
-	InputComponent->BindAxis("MoveX", this, &ADogPawn::Move_XAxis);
-	InputComponent->BindAxis("MoveY", this, &ADogPawn::Move_YAxis);
 }
 
-void ADogPawn::Move_XAxis(float AxisValue)
-{
-	// Move at 100 units per second forward or backward
-	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
-}
-
-void ADogPawn::Move_YAxis(float AxisValue)
-{
-	// Move at 100 units per second right or left
-	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * 100.0f;
-}
-
-void ADogPawn::ActivateSunShine(){
-	int i = 23;
-}
-
-void ADogPawn::MySuperClass(){
-	int i = 23;
-}
