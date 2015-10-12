@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "SheepPawn.h"
-#include "DogPawn.h"
+#include "DogAIPawn.h"
 #include "GameFramework/Actor.h"
 #include "HerdActor.generated.h"
 
@@ -28,7 +28,7 @@ public:
 	void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
 
 	UFUNCTION(BlueprintCallable, Category = "Herd")
-	void SetDog(UPARAM(ref) class ADogPawn* &dog);
+	void SetDog(UPARAM(ref) class ADogAIPawn* &dog);
 
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* Box;
@@ -59,7 +59,7 @@ private:
 	float dogSeparationWeight;
 
 	TArray<class ASheepPawn*> sheepArray;
-	ADogPawn* dog;
+	ADogAIPawn* dog;
 
 	FVector Separate(int index);
 	FVector Align(int index);

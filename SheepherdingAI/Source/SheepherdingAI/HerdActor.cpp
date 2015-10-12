@@ -206,7 +206,7 @@ void AHerdActor::SetSheepArray(TArray<class ASheepPawn*>& sheep){
 	sheepArray = sheep;
 }
 
-void AHerdActor::SetDog(class ADogPawn* &d) {
+void AHerdActor::SetDog(class ADogAIPawn* &d) {
 	dog = d;
 }
 
