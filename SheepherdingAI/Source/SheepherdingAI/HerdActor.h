@@ -30,6 +30,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Herd")
 	void SetDog(UPARAM(ref) class ADogPawn* &dog);
 
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* Box;
+
 private:
 	// Set flocking properties from the editor
 	UPROPERTY(EditAnywhere)
@@ -63,5 +66,10 @@ private:
 	FVector Cohere(int index);
 	FVector DogSeparate(int index);
 	FVector SteerTo(int index, FVector target);
-	
+
+	bool IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds);
+
+	//void TriggerEnter(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+	//void TriggerExit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	//
 };

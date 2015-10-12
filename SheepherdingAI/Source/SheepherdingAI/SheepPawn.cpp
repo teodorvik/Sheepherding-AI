@@ -12,13 +12,9 @@ ASheepPawn::ASheepPawn()
 
 	// Create a dummy root component we can attach things to.
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
-	// Create a camera and a visible object
-	//UCameraComponent* OurCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("OurCamera"));
+
 	OurVisibleComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OurVisibleComponent"));
-	// Attach our camera and visible object to our root component. Offset and rotate the camera.
-	//OurCamera->AttachTo(RootComponent);
-	//OurCamera->SetRelativeLocation(FVector(-250.0f, 0.0f, 250.0f));
-	//OurCamera->SetRelativeRotation(FRotator(-45.0f, 0.0f, 0.0f));
+	//OurVisibleComponent->bGenerateOverlapEvents = true;
 	OurVisibleComponent->AttachTo(RootComponent);
 
 	velocity = FVector(0.f, 0.f, 0.f);

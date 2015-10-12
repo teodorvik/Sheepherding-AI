@@ -10,6 +10,15 @@ AHerdActor::AHerdActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	// Create a dummy root component we can attach things to.
+	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+
+	Box = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
+	Box->SetRelativeScale3D(FVector(5.0f, 5.0f, 5.0f));
+	//Box->bGenerateOverlapEvents = true;
+	//Box->OnComponentEndOverlap.AddDynamic(this, &AHerdActor::TriggerExit);
+	//Box->OnComponentBeginOverlap.AddDynamic(this, &AHerdActor::TriggerEnter);
+	Box->AttachTo(RootComponent);
 }
 
 // Called when the game starts or when spawned
@@ -173,8 +182,10 @@ void AHerdActor::Tick( float DeltaTime )
 
 		FVector oldLocation = sheep->GetActorLocation();
 		FVector newLocation = oldLocation + newVelocity * DeltaTime;
-				
-		sheepArray[i]->SetActorLocation(newLocation);
+			
+		if (IsSphereInBounds(newLocation, 50.0f, Box->Bounds)) {
+			sheepArray[i]->SetActorLocation(newLocation);
+		}
 		sheepArray[i]->SetSheepVelocity(newVelocity);
 
 		//UE_LOG(LogTemp, Warning, TEXT("Sheep's old location is %s"), *(oldLocation.ToString()));
@@ -187,6 +198,8 @@ void AHerdActor::Tick( float DeltaTime )
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Cohesion: " + (averagePosition[0] * cohesionWeight).ToString()));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Separation: " + (separationVector[0] * separationWeight).ToString()));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Dog separation: " + (dogSeparationVector[0] * dogSeparationWeight).ToString()));
+
+	//UE_LOG(LogTemp, Warning, TEXT("Box: %s"), *(Box->GetScaledBoxExtent().ToString()));
 }
 
 void AHerdActor::SetSheepArray(TArray<class ASheepPawn*>& sheep){
@@ -196,3 +209,19 @@ void AHerdActor::SetSheepArray(TArray<class ASheepPawn*>& sheep){
 void AHerdActor::SetDog(class ADogPawn* &d) {
 	dog = d;
 }
+
+bool AHerdActor::IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds) {
+	return ((position.X > (bounds.Origin.X - bounds.BoxExtent.X + radius)) && 
+		(position.X < (bounds.Origin.X + bounds.BoxExtent.X - radius)) &&
+		(position.Y > (bounds.Origin.Y - bounds.BoxExtent.Y + radius)) &&
+		(position.Y < (bounds.Origin.Y + bounds.BoxExtent.X - radius)));			
+}
+
+//void AHerdActor::TriggerEnter(class AActor* otherActor, class UPrimitiveComponent* otherComp, int32 otherBodyIndex, bool bFromSweep, const FHitResult & SweepResult) {
+//	UE_LOG(LogTemp, Warning, TEXT("TriggerEnter!!"));
+//}
+//
+//void AHerdActor::TriggerExit(class AActor* otherActor, class UPrimitiveComponent* otherComp, int32 otherBodyIndex) {
+//	UE_LOG(LogTemp, Warning, TEXT("TriggerExit!!"));
+//}
+
