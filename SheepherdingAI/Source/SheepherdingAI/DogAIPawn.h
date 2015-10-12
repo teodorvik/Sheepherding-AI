@@ -30,11 +30,24 @@ public:
 	float HerdDistanceToGoal();
 
 	UPROPERTY(EditAnywhere)
-		USceneComponent* OurVisibleComponent;
+	USceneComponent* OurVisibleComponent;
 
 	// Store references to all sheep (called from blueprint)
 	UFUNCTION(BlueprintCallable, Category = "AIDog")
-		void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
+	void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);
+
+	// Input functions
+	void Move_XAxis(float AxisValue);
+	void Move_YAxis(float AxisValue);
+
+	// Input variables
+	FVector CurrentVelocity;
+
+	UPROPERTY(EditAnywhere)
+	float speed;
+
+	UPROPERTY(EditAnywhere)
+	bool useAI;
 
 private:
 	FVector herdCenter;

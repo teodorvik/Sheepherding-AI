@@ -9,10 +9,14 @@ ADogAIPawn::ADogAIPawn()
 {
  	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	AutoPossessPlayer = EAutoReceiveInput::Player0;
 	
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	OurVisibleComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OurVisibleComponent"));
 	OurVisibleComponent->AttachTo(RootComponent);
+
+	useAI = false;
 }
 
 // Called when the game starts or when spawned
@@ -36,9 +40,23 @@ void ADogAIPawn::Tick( float DeltaTime )
 	// distance from goal
 	float spread;	
 	spread = HerdSpread();
+	
+	if (!CurrentVelocity.IsZero())
+	{	
+		UE_LOG(LogTemp, Warning, TEXT("Velocity not zero"));
+		FVector NewLocation;
+		if (!useAI) {
+			NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
+		}
+		else {
+			NewLocation = GetActorLocation();
+		}
 
-	// UE_LOG(LogTemp, Warning, TEXT("penis: " + herdCenter.ToString()));
-
+		SetActorLocation(NewLocation);
+	}
+	else
+		UE_LOG(LogTemp, Warning, TEXT("Velocity zero"));
+	
 }
 
 // Get how much the herd is seperated
@@ -93,8 +111,22 @@ void ADogAIPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent
 {
 	Super::SetupPlayerInputComponent(InputComponent);
 
+	// Respond every frame to the values of our two movement axes, "MoveX" and "MoveY".
+	InputComponent->BindAxis("MoveX", this, &ADogAIPawn::Move_XAxis);
+	InputComponent->BindAxis("MoveY", this, &ADogAIPawn::Move_YAxis);
 }
 
 void ADogAIPawn::SetSheepArray(TArray<class ASheepPawn*>& sheep){
 	sheepArray = sheep;
+}
+
+void ADogAIPawn::Move_XAxis(float AxisValue)
+{
+	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
+}
+
+void ADogAIPawn::Move_YAxis(float AxisValue)
+{
+	// Move at 100 units per second right or left
+	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
 }
