@@ -37,23 +37,26 @@ void ADogAIPawn::Tick( float DeltaTime )
 	float spread;	
 	spread = HerdSpread();
 
+	// UE_LOG(LogTemp, Warning, TEXT("penis: " + herdCenter.ToString()));
 
 }
 
 // Get how much the herd is seperated
 float ADogAIPawn::HerdSpread() {	
 	// Variables
-	std::vector<float> distance;
-	distance.reserve(sheepArray.Num());
+	std::vector<float> distance(sheepArray.Num());
+	//distance.reserve(sheepArray.Num());
 
 	FVector center = FVector(0.0f, 0.0f, 0.0f);
 
 	// Calculate distance from one sheep to all the others
 	// Sum and return
+	float dist = 0.0f;
 	for (int i = 0; i < sheepArray.Num(); i++) {
-		float dist = 0.0f;
+		distance[i] = 0.0f;
 		ASheepPawn* sheep = sheepArray[i];
 		center += sheep->GetActorLocation();
+		// 
 
 		for (int j = 0; j < sheepArray.Num(); j++) {
 			if (i != j) {
@@ -63,12 +66,15 @@ float ADogAIPawn::HerdSpread() {
 		}
 		distance[i] = dist;
 	}
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Sheeplocation: " + distance.size())); // FString::SanitizeFloat()
 
+	//UE_LOG(LogTemp, Warning, TEXT("Dist: %d"), distance.size());
 	float distanceTotal = 0.0f;
 	for (int i = 0; i < distance.size(); i++) {
 		distanceTotal += distance[i];
-	}
 
+	}
+	
 	// Calculate center of the herd and update private variable. 
 	herdCenter = center/sheepArray.Num();
 
