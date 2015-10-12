@@ -23,7 +23,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
 	UPROPERTY(EditAnywhere)
-	USceneComponent* OurVisibleComponent;
+	UStaticMeshComponent* OurVisibleComponent;
 
 	void SetSheepVelocity(FVector vel);
 	FVector GetSheepVelocity();
