@@ -18,6 +18,7 @@ ASheepPawn::ASheepPawn()
 	OurVisibleComponent->AttachTo(RootComponent);
 
 	velocity = FVector(0.f, 0.f, 0.f);
+	isInGoal = false;
 }
 
 FVector ASheepPawn::GetSheepVelocity() {
@@ -33,6 +34,7 @@ void ASheepPawn::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	startLocation = GetActorLocation();
 }
 
 // Called every frame
@@ -47,5 +49,10 @@ void ASheepPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent
 {
 	Super::SetupPlayerInputComponent(InputComponent);
 
+}
+
+void ASheepPawn::Reset() {
+	SetActorLocation(startLocation);
+	velocity = FVector(0.0f, 0.0f, 0.0f);
 }
 

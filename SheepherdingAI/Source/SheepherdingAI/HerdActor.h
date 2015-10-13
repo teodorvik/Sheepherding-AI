@@ -30,8 +30,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Herd")
 	void SetDog(UPARAM(ref) class ADogAIPawn* &dog);
 
+	// How can I get these pointers directly in the blueprint instead of having to call GetFenceBox()?
 	UPROPERTY(EditAnywhere)
-	UBoxComponent* Box;
+	UBoxComponent* fenceBox;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* goalBox;
+
+	UFUNCTION(BlueprintCallable, Category = "Herd")
+	UBoxComponent* GetFenceBox();
+
+	TArray<class ASheepPawn*> GetSheepArray();
 
 private:
 	// Set flocking properties from the editor
@@ -58,18 +67,31 @@ private:
 	UPROPERTY(EditAnywhere)
 	float dogSeparationWeight;
 
+	// Learning
+	bool isTraining;
+	int currentGeneration;
+	UPROPERTY(EditAnywhere)
+	int32 maxGenerations;
+	UPROPERTY(EditAnywhere)
+	int32 population;
+
+	float currentTime;
+	UPROPERTY(EditAnywhere)
+	float maxTime;
+
+
 	TArray<class ASheepPawn*> sheepArray;
 	ADogAIPawn* dog;
 
+	// Flocking stuff
 	FVector Separate(int index);
 	FVector Align(int index);
 	FVector Cohere(int index);
 	FVector DogSeparate(int index);
 	FVector SteerTo(int index, FVector target);
+	void UpdateFlocking(float DeltaTime);
 
 	bool IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds);
-
-	//void TriggerEnter(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
-	//void TriggerExit(class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-	//
+	bool AreAllSheepInGoal();
+	void Reset();
 };

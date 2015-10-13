@@ -23,7 +23,8 @@ ADogAIPawn::ADogAIPawn()
 void ADogAIPawn::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	startLocation = GetActorLocation();	
 	// random weights 
 	// herdDistanceWeight;
 	// herdSpreadWeight;
@@ -34,29 +35,19 @@ void ADogAIPawn::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 	
-	// Get input
-	// All sheep
-	// goal
-	// distance from goal
-	float spread;	
-	spread = HerdSpread();
-	
-	if (!CurrentVelocity.IsZero())
-	{	
-		UE_LOG(LogTemp, Warning, TEXT("Velocity not zero"));
-		FVector NewLocation;
-		if (!useAI) {
-			NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
-		}
-		else {
-			NewLocation = GetActorLocation();
-		}
-
-		SetActorLocation(NewLocation);
+	if (useAI) {
+		UpdateAIMovement(DeltaTime);
 	}
-	else
-		UE_LOG(LogTemp, Warning, TEXT("Velocity zero"));
-	
+	else {
+		if (!CurrentVelocity.IsZero())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
+			FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
+
+			if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
+				SetActorLocation(NewLocation);
+		}
+	}
 }
 
 // Get how much the herd is seperated
@@ -106,27 +97,63 @@ float ADogAIPawn::HerdDistanceToGoal() {
 	return dist;
 }
 
-// Called to bind functionality to input
-void ADogAIPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent)
-{
+void ADogAIPawn::SetupPlayerInputComponent(class UInputComponent* InputComponent) {
 	Super::SetupPlayerInputComponent(InputComponent);
 
-	// Respond every frame to the values of our two movement axes, "MoveX" and "MoveY".
-	InputComponent->BindAxis("MoveX", this, &ADogAIPawn::Move_XAxis);
-	InputComponent->BindAxis("MoveY", this, &ADogAIPawn::Move_YAxis);
+	if (!useAI) {
+		InputComponent->BindAxis("MoveX", this, &ADogAIPawn::Move_XAxis);
+		InputComponent->BindAxis("MoveY", this, &ADogAIPawn::Move_YAxis);
+	}
 }
 
-void ADogAIPawn::SetSheepArray(TArray<class ASheepPawn*>& sheep){
+void ADogAIPawn::SetSheepArray(TArray<class ASheepPawn*>& sheep) {
 	sheepArray = sheep;
 }
 
-void ADogAIPawn::Move_XAxis(float AxisValue)
-{
+void ADogAIPawn::SetBounds(UBoxComponent* &b) {
+	box = b;
+}
+
+void ADogAIPawn::Move_XAxis(float AxisValue) {
 	CurrentVelocity.X = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
 }
 
-void ADogAIPawn::Move_YAxis(float AxisValue)
-{
-	// Move at 100 units per second right or left
+void ADogAIPawn::Move_YAxis(float AxisValue) {
 	CurrentVelocity.Y = FMath::Clamp(AxisValue, -1.0f, 1.0f) * speed;
+}
+
+bool ADogAIPawn::IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds) {
+	return ((position.X > (bounds.Origin.X - bounds.BoxExtent.X + radius)) &&
+		(position.X < (bounds.Origin.X + bounds.BoxExtent.X - radius)) &&
+		(position.Y >(bounds.Origin.Y - bounds.BoxExtent.Y + radius)) &&
+		(position.Y < (bounds.Origin.Y + bounds.BoxExtent.X - radius)));
+}
+
+void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
+	// Get input
+	// All sheep
+	// goal
+	// distance from goal
+	float spread;
+	spread = HerdSpread();
+
+	float thresh = 0.75;
+	float input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
+	CurrentVelocity.X = input * speed;
+	input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
+	CurrentVelocity.X -= input * speed;
+	input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
+	CurrentVelocity.Y = input * speed;
+	input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
+	CurrentVelocity.Y -= input * speed;
+
+	//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
+	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
+
+	if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
+		SetActorLocation(NewLocation);
+}
+
+void ADogAIPawn::Reset() {
+	SetActorLocation(startLocation);
 }

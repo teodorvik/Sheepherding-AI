@@ -28,7 +28,10 @@ public:
 	void SetSheepVelocity(FVector vel);
 	FVector GetSheepVelocity();
 
+	void Reset();
+
 private:
+	FVector startLocation;
 	FVector velocity;
-	
+	bool isInGoal;
 };
