@@ -3,7 +3,6 @@
 #include "SheepherdingAI.h"
 #include "DogAIPawn.h"
 
-
 // Sets default values
 ADogAIPawn::ADogAIPawn()
 {

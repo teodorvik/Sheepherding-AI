@@ -58,3 +58,11 @@ void Brain::Forward() {
 float Brain::Activation(float val) {
 	return tanh(val);
 }
+
+void Brain::CalcFitness() {
+	fitness = -1.0f * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 100.0f));
+}
+
+float Brain::GetFitness() {
+	return fitness;
+}

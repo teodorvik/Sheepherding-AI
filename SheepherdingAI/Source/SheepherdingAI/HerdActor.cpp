@@ -4,6 +4,12 @@
 #include "HerdActor.h"
 #include "Brain.h"
 
+#include <algorithm>
+
+bool CompareBrain(Brain* b1, Brain* b2)
+{
+	return b1->GetFitness() < b2->GetFitness();
+}
 
 // Sets default values
 AHerdActor::AHerdActor()
@@ -261,11 +267,12 @@ void AHerdActor::Tick( float DeltaTime )
 			}
 
 			// Todo: Calculate fitness value
-
+			brains[i]->CalcFitness();
 		}
 
 		// Todo: Get the best 20 out of 100 population and create 80 new.
 		// Then perform crossover and mutations
+		//std::sort(brains.begin(), brains.end(), CompareBrain);
 
 		isTraining = false;
 		Reset();

@@ -14,6 +14,9 @@ public:
 
 	// Calculate outputs from the inputs
 	void Forward();
+	
+	void CalcFitness();
+	float GetFitness();
 
 private:
 	static const int numOutput = 4; //Output: left, right, top, down
@@ -23,6 +26,8 @@ private:
 	float currentOutput[numOutput];
 	float currentInput[numInput];
 	float weights[numWeights];
+
+	float fitness;
 
 	// Activation function used in the neural network. Returns a value in the range [-1, 1]
 	float Activation(float val);
