@@ -37,6 +37,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* goalBox;
 
+	void SetGoalCenter();
+
 	UFUNCTION(BlueprintCallable, Category = "Herd")
 	UBoxComponent* GetFenceBox();
 
@@ -66,6 +68,8 @@ private:
 	float dogDistance;
 	UPROPERTY(EditAnywhere)
 	float dogSeparationWeight;
+
+	FVector2D goalCenter;
 
 	// Learning
 	bool isTraining;

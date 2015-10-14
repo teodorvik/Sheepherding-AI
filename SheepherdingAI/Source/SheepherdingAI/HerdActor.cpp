@@ -42,6 +42,9 @@ void AHerdActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	// Set center of goal
+	SetGoalCenter();
+
 	for (int i = 0; i < population; i++) {
 		brains.push_back(new Brain());
 	}
@@ -266,13 +269,24 @@ void AHerdActor::Tick( float DeltaTime )
 				dog->UpdateAIMovement(fakeDeltaTime);
 			}
 
+			FVector sheepPos = sheepArray[0]->GetActorLocation();
+			FVector sheepVelocity = sheepArray[0]->GetVelocity();
+
 			// Todo: Calculate fitness value
+			brains[i]->SetCurrentInput(sheepPos[0], sheepPos[1], sheepVelocity[0], sheepVelocity[1], goalCenter[0], goalCenter[1]);
 			brains[i]->CalcFitness();
 		}
 
+		for (int i = 0; i < brains.size(); i++) {
+			UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f unsorted"), i, brains[i]->GetFitness());
+		}
 		// Todo: Get the best 20 out of 100 population and create 80 new.
 		// Then perform crossover and mutations
-		//std::sort(brains.begin(), brains.end(), CompareBrain);
+		std::sort(brains.begin(), brains.end(), CompareBrain);
+
+		for (int i = 0; i < brains.size(); i++) {
+			UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+		}
 
 		isTraining = false;
 		Reset();
@@ -327,4 +341,13 @@ bool AHerdActor::AreAllSheepInGoal() {
 	}
 
 	return true;
+}
+
+void AHerdActor::SetGoalCenter() {
+	FBoxSphereBounds bounds = goalBox->Bounds;
+
+	float centerX = bounds.Origin.X + bounds.BoxExtent.X / 2.0f;
+	float centerY = bounds.Origin.Y + bounds.BoxExtent.Y / 2.0f;
+
+	goalCenter = FVector2D(centerX, centerY);
 }
