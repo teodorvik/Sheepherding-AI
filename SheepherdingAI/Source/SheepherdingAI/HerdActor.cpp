@@ -36,6 +36,9 @@ void AHerdActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	for (int i = 0; i < population; i++) {
+		brains.push_back(new Brain());
+	}
 }
 
 void AHerdActor::Reset() {
@@ -244,23 +247,21 @@ void AHerdActor::Tick( float DeltaTime )
 	//
 	// Crossover and mutations and other evolution stuff should be performed before moving to the next generation
 	//
-
 	if (isTraining) {
 		float fakeDeltaTime = 1.0f / 60.0f;
 
-		// Give the dog a bone... I mean brain
-		// Todo: Create more brains (number of population)
-		dog->brain = new Brain();
-
 		for (int i = 0; i < population; i++) {
+			// Give the dog a bone... I mean brain
+			dog->brain = brains[i];
 			// Update until done
 			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
-				UE_LOG(LogTemp, Warning, TEXT("Training!"));
+				//UE_LOG(LogTemp, Warning, TEXT("Training!"));
 				UpdateFlocking(fakeDeltaTime);
 				dog->UpdateAIMovement(fakeDeltaTime);
 			}
 
 			// Todo: Calculate fitness value
+
 		}
 
 		// Todo: Get the best 20 out of 100 population and create 80 new.
@@ -269,6 +270,8 @@ void AHerdActor::Tick( float DeltaTime )
 		isTraining = false;
 		Reset();
 	}
+	// If not training:
+	// Show off the best dog from the current generation. Then train some more!
 	else {
 		UpdateFlocking(DeltaTime);
 

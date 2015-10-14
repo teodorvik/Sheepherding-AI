@@ -82,6 +82,7 @@ private:
 
 	TArray<class ASheepPawn*> sheepArray;
 	ADogAIPawn* dog;
+	std::vector<Brain*> brains;
 
 	// Flocking stuff
 	FVector Separate(int index);
