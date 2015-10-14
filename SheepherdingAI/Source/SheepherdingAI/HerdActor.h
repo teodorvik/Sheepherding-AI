@@ -79,7 +79,7 @@ private:
 	UPROPERTY(EditAnywhere)
 	float maxTime;
 
-
+	bool isSheepArraySet;
 	TArray<class ASheepPawn*> sheepArray;
 	ADogAIPawn* dog;
 	std::vector<Brain*> brains;

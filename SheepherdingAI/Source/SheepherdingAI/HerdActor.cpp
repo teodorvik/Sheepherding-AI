@@ -4,12 +4,12 @@
 #include "HerdActor.h"
 #include "Brain.h"
 
-#include <algorithm>
+//#include <algorithm>
 
-bool CompareBrain(Brain* b1, Brain* b2)
-{
-	return b1->GetFitness() < b2->GetFitness();
-}
+//bool CompareBrain(Brain* b1, Brain* b2)
+//{
+//	return b1->GetFitness() < b2->GetFitness();
+//}
 
 // Sets default values
 AHerdActor::AHerdActor()
@@ -28,6 +28,19 @@ AHerdActor::AHerdActor()
 	goalBox->SetRelativeScale3D(FVector(1.0f, 1.0f, 1.0f));
 	goalBox->AttachTo(RootComponent);
 
+	// Flocking parameters
+	separationWeight = 150.0f;
+	alignmentWeight = 0.5f;
+	cohesionWeight = 0.5f;
+	cohesionDistance = 600.0f;
+	cohesionDamping = 1000.0f;
+	desiredSeparation = 150.0f;
+	alignmentDistance = 600.0f;
+	maxForce = 5000.0f;
+	maxSpeed = 200.0f;
+	dogDistance = 600.0f;
+	dogSeparationWeight = 100.0f;
+
 	isTraining = true;
 	currentGeneration = 1;
 	maxGenerations = 5;
@@ -35,12 +48,19 @@ AHerdActor::AHerdActor()
 
 	currentTime = 0.0f;
 	maxTime = 10.0f;
+
+	dog = NULL;
+	isSheepArraySet = false;
+
+	UE_LOG(LogTemp, Warning, TEXT("HerdActor::HerdActor()"));
 }
 
 // Called when the game starts or when spawned
 void AHerdActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("HerdActor::BeginPlay()"));
 	
 	for (int i = 0; i < population; i++) {
 		brains.push_back(new Brain());
@@ -53,7 +73,13 @@ void AHerdActor::Reset() {
 		sheepArray[i]->Reset();
 	}
 
-	dog->Reset();
+	if (!dog) {
+		//UE_LOG(LogTemp, Error, TEXT("Dog not set"));
+	}
+	else {
+		dog->Reset();
+	}
+
 	currentTime = 0.0f;
 }
 
@@ -214,9 +240,9 @@ void AHerdActor::UpdateFlocking(float DeltaTime) {
 		FVector oldLocation = sheep->GetActorLocation();
 		FVector newLocation = oldLocation + newVelocity * DeltaTime;
 
-		if (IsSphereInBounds(newLocation, 50.0f, fenceBox->Bounds)) {
+		//if (IsSphereInBounds(newLocation, 50.0f, fenceBox->Bounds)) {
 			sheepArray[i]->SetActorLocation(newLocation);
-		}
+		//}
 		sheepArray[i]->SetSheepVelocity(newVelocity);
 
 		//UE_LOG(LogTemp, Warning, TEXT("Sheep's old location is %s"), *(oldLocation.ToString()));
@@ -237,9 +263,35 @@ void AHerdActor::Tick( float DeltaTime )
 
 	GEngine->ClearOnScreenDebugMessages();
 
+	FString trainString;
+	if (isTraining)
+		trainString = "true";
+	else
+		trainString = "false";
+
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DeltaTime: " + FString::SanitizeFloat(DeltaTime)));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Is training: " + trainString));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Current generation: " + FString::FromInt(currentGeneration)));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Max generations: " + FString::FromInt(maxGenerations)));
+
+	// Check if pointers are set
+	bool error = false;
+	if (!dog) {
+		UE_LOG(LogTemp, Error, TEXT("HerdActor: Dog not set"));
+		error = true;
+	}
+
+	if (!isSheepArraySet) {
+		UE_LOG(LogTemp, Error, TEXT("HerdActor: Sheeparray not set"));
+		error = true;
+	}
+
+	if (sheepArray.Num() == 0) {
+		UE_LOG(LogTemp, Warning, TEXT("HerdActor: No sheep!"));
+		//error = true;
+	}
+
+	if (error) return;
 
 	// Training:
 	//
@@ -253,26 +305,34 @@ void AHerdActor::Tick( float DeltaTime )
 	//
 	// Crossover and mutations and other evolution stuff should be performed before moving to the next generation
 	//
-	if (isTraining) {
+
+	//UE_LOG(LogTemp, Warning, TEXT("IM GONNA TRAIN!"));
+	if (isTraining && dog->useAI) {
 		float fakeDeltaTime = 1.0f / 60.0f;
 
 		for (int i = 0; i < population; i++) {
-			// Give the dog a bone... I mean brain
-			dog->brain = brains[i];
-			// Update until done
-			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
-				//UE_LOG(LogTemp, Warning, TEXT("Training!"));
-				UpdateFlocking(fakeDeltaTime);
-				dog->UpdateAIMovement(fakeDeltaTime);
+			//// Give the dog a bone... I mean brain
+			if (dog) {
+				dog->brain = brains[i];
 			}
 
-			// Todo: Calculate fitness value
-			brains[i]->CalcFitness();
+			// Update until done
+			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
+				UE_LOG(LogTemp, Warning, TEXT("Training!"));
+				//UpdateFlocking(fakeDeltaTime);
+				//dog->UpdateAIMovement(fakeDeltaTime);
+				currentTime += fakeDeltaTime;
+			}
+
+			//UE_LOG(LogTemp, Warning, TEXT("DONE WITH ONE BRAIN!"));
+			//Todo: Calculate fitness value
+			//brains[i]->CalcFitness();
 		}
 
 		// Todo: Get the best 20 out of 100 population and create 80 new.
 		// Then perform crossover and mutations
 		//std::sort(brains.begin(), brains.end(), CompareBrain);
+		//UE_LOG(LogTemp, Warning, TEXT("GENERATION DAONE!"));
 
 		isTraining = false;
 		Reset();
@@ -280,6 +340,7 @@ void AHerdActor::Tick( float DeltaTime )
 	// If not training:
 	// Show off the best dog from the current generation. Then train some more!
 	else {
+		UE_LOG(LogTemp, Warning, TEXT("Not training: currentTime: %s"), *FString::SanitizeFloat(currentTime));
 		UpdateFlocking(DeltaTime);
 
 		if (AreAllSheepInGoal() || currentTime > maxTime) {
@@ -290,16 +351,17 @@ void AHerdActor::Tick( float DeltaTime )
 		currentTime += DeltaTime;
 	}
 
-	currentTime += DeltaTime;
 	//UE_LOG(LogTemp, Warning, TEXT("Box: %s"), *(Box->GetScaledBoxExtent().ToString()));	
 }
 
 void AHerdActor::SetSheepArray(TArray<class ASheepPawn*>& sheep){
 	UE_LOG(LogTemp, Warning, TEXT("AHerdActor::SetSheepArray"));
 	sheepArray = sheep;
+	isSheepArraySet = true;
 }
 
 void AHerdActor::SetDog(class ADogAIPawn* &d) {
+	UE_LOG(LogTemp, Warning, TEXT("Set dog"));
 	dog = d;
 }
 

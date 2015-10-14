@@ -16,6 +16,11 @@ ADogAIPawn::ADogAIPawn()
 	OurVisibleComponent->AttachTo(RootComponent);
 
 	useAI = false;
+	brain = NULL;
+
+	startLocation = FVector(0.0f, 0.0f, 0.0f);
+
+	UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn::ADogAIPawn()"));
 }
 
 // Called when the game starts or when spawned
@@ -23,7 +28,13 @@ void ADogAIPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn::BeginPlay()"));
+
 	startLocation = GetActorLocation();	
+
+	UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn::BeginPlay() end"));
+
+	
 	// random weights 
 	// herdDistanceWeight;
 	// herdSpreadWeight;
@@ -40,11 +51,16 @@ void ADogAIPawn::Tick( float DeltaTime )
 	else {
 		if (!CurrentVelocity.IsZero())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
+			//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
 			FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
 
-			if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
+			if (!box) {
+				UE_LOG(LogTemp, Warning, TEXT("DogAIPawn: No bounds set"));
 				SetActorLocation(NewLocation);
+			}
+			else if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds)) {
+				SetActorLocation(NewLocation);
+			}
 		}
 	}
 }
@@ -133,23 +149,30 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	// All sheep
 	// goal
 	// distance from goal
-	float spread;
-	spread = HerdSpread();
+	//float spread;
+	//spread = HerdSpread();
 
 	float thresh = 0.75;
-	float input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
-	CurrentVelocity.X = input * speed;
-	input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
-	CurrentVelocity.X -= input * speed;
-	input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
-	CurrentVelocity.Y = input * speed;
-	input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
-	CurrentVelocity.Y -= input * speed;
+	float input;
+
+	if (brain) {
+		input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
+		CurrentVelocity.X = input * speed;
+		input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
+		CurrentVelocity.X -= input * speed;
+		input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
+		CurrentVelocity.Y = input * speed;
+		input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
+		CurrentVelocity.Y -= input * speed;
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn: No brain!"));
+	}
 
 	//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
 	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
 
-	if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
+	//if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
 		SetActorLocation(NewLocation);
 }
 
