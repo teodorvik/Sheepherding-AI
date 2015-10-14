@@ -60,7 +60,21 @@ float Brain::Activation(float val) {
 }
 
 void Brain::CalcFitness() {
-	fitness = -1.0f * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 100.0f));
+	// Calculate distance between goal and herd center
+	float sheepPosX = currentInput[0]; //  = sheepPosX;
+	float sheepPosY = currentInput[1]; // = sheepPosY;
+	float sheepVelX = currentInput[2]; // = sheepVelX;
+	float sheepVelY = currentInput[3]; // = sheepVelY;
+	float goalPosX = currentInput[4]; // = goalPosX;
+	float goalPosY = currentInput[5]; // = goalPosY;
+
+	float dx = goalPosX - sheepPosX;
+	float dy = goalPosY - sheepPosY;
+	float dist = sqrt(dx*dx + dy*dy);
+
+	// fitness = -1.0f * static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 100.0f));
+	fitness = dist*dist;
+	UE_LOG(LogTemp, Warning, TEXT("Fitness: %f"), fitness);
 }
 
 float Brain::GetFitness() {

@@ -4,12 +4,12 @@
 #include "HerdActor.h"
 #include "Brain.h"
 
-//#include <algorithm>
+#include <algorithm>
 
-//bool CompareBrain(Brain* b1, Brain* b2)
-//{
-//	return b1->GetFitness() < b2->GetFitness();
-//}
+bool CompareBrain(Brain* b1, Brain* b2)
+{
+	return b1->GetFitness() < b2->GetFitness();
+}
 
 // Sets default values
 AHerdActor::AHerdActor()
@@ -62,6 +62,9 @@ void AHerdActor::BeginPlay()
 
 	UE_LOG(LogTemp, Warning, TEXT("HerdActor::BeginPlay()"));
 	
+	// Set center of goal
+	SetGoalCenter();
+
 	for (int i = 0; i < population; i++) {
 		brains.push_back(new Brain());
 	}
@@ -319,20 +322,31 @@ void AHerdActor::Tick( float DeltaTime )
 			// Update until done
 			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
 				UE_LOG(LogTemp, Warning, TEXT("Training!"));
-				//UpdateFlocking(fakeDeltaTime);
-				//dog->UpdateAIMovement(fakeDeltaTime);
+				UpdateFlocking(fakeDeltaTime);
+				dog->UpdateAIMovement(fakeDeltaTime);
 				currentTime += fakeDeltaTime;
 			}
 
-			//UE_LOG(LogTemp, Warning, TEXT("DONE WITH ONE BRAIN!"));
-			//Todo: Calculate fitness value
-			//brains[i]->CalcFitness();
+			FVector sheepPos = sheepArray[0]->GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("Sheep's location is %s"), *(sheepPos.ToString()));
+			FVector sheepVelocity = sheepArray[0]->GetVelocity();
+
+			// Todo: Calculate fitness value
+			brains[i]->SetCurrentInput(sheepPos[0], sheepPos[1], sheepVelocity[0], sheepVelocity[1], goalCenter[0], goalCenter[1]);
+			brains[i]->CalcFitness();
 		}
 
+		for (int i = 0; i < brains.size(); i++) {
+			//UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f unsorted"), i, brains[i]->GetFitness());
+		}
 		// Todo: Get the best 20 out of 100 population and create 80 new.
 		// Then perform crossover and mutations
-		//std::sort(brains.begin(), brains.end(), CompareBrain);
-		//UE_LOG(LogTemp, Warning, TEXT("GENERATION DAONE!"));
+
+		std::sort(brains.begin(), brains.end(), CompareBrain);
+
+		for (int i = 0; i < brains.size(); i++) {
+			//UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+		}
 
 		isTraining = false;
 		Reset();
@@ -340,7 +354,7 @@ void AHerdActor::Tick( float DeltaTime )
 	// If not training:
 	// Show off the best dog from the current generation. Then train some more!
 	else {
-		UE_LOG(LogTemp, Warning, TEXT("Not training: currentTime: %s"), *FString::SanitizeFloat(currentTime));
+		//UE_LOG(LogTemp, Warning, TEXT("Not training: currentTime: %s"), *FString::SanitizeFloat(currentTime));
 		UpdateFlocking(DeltaTime);
 
 		if (AreAllSheepInGoal() || currentTime > maxTime) {
@@ -389,4 +403,13 @@ bool AHerdActor::AreAllSheepInGoal() {
 	}
 
 	return true;
+}
+
+void AHerdActor::SetGoalCenter() {
+	FBoxSphereBounds bounds = goalBox->Bounds;
+
+	float centerX = bounds.Origin.X + bounds.BoxExtent.X / 2.0f;
+	float centerY = bounds.Origin.Y + bounds.BoxExtent.Y / 2.0f;
+
+	goalCenter = FVector2D(centerX, centerY);
 }
