@@ -168,6 +168,8 @@ void AHerdActor::Tick( float DeltaTime )
 			FVector herdPos = GetHerdCenter();
 			FVector herdVelocity = GetHerdVelocity();
 
+			dog->SetTheta(dogPos, herdPos);
+
 			// Todo: Calculate fitness value
 			//brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
 			
@@ -206,6 +208,7 @@ void AHerdActor::Tick( float DeltaTime )
 				int randParent2 = rand() % (int)(selectedPop + 1);
 				// Parents creates a new child with coin toss
 				brains[i]->Crossover(brains[randParent1], brains[randParent2]);
+				//brains[i]->CopyWeights(brains[randParent1]);
 				// Mutate the new brain
 				// float mutationRate; - The probability that a weight will get mutated
 				// float mutationSize; - The stdev of the noise added when mutating
@@ -213,7 +216,7 @@ void AHerdActor::Tick( float DeltaTime )
 			}
 
 			if (isTraining) {
-				//dog->SetRandomStartLocation(fenceBox->Bounds);
+				dog->SetRandomStartLocation(fenceBox->Bounds);
 				currentGeneration++;
 			}
 		}
@@ -249,7 +252,7 @@ void AHerdActor::Tick( float DeltaTime )
 				//dog->brain->PrintWeights();
 			}
 
-			//dog->SetRandomStartLocation(fenceBox->Bounds);
+			dog->SetRandomStartLocation(fenceBox->Bounds);
 			currentGeneration++;
 
 			Reset();

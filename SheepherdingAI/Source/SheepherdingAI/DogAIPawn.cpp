@@ -98,28 +98,43 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	//spread = HerdSpread();
 
 	float thresh = 0.75;
-	float input;
+	//float input;
 
 	if (brain) {
-		input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
-		//UE_LOG(LogTemp, Warning, TEXT("GetRightOutput(): %f"), brain->GetRightOutput());
-		CurrentVelocity.X = input * speed;
-		input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
-		//UE_LOG(LogTemp, Warning, TEXT("GetLeftOutput(): %f"), brain->GetLeftOutput());
-		CurrentVelocity.X -= input * speed;
-		input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
-		//UE_LOG(LogTemp, Warning, TEXT("GetUpOutput(): %f"), brain->GetUpOutput());
-		CurrentVelocity.Y = input * speed;
-		input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
-		//UE_LOG(LogTemp, Warning, TEXT("GetDownOutput(): %f"), brain->GetDownOutput());
-		CurrentVelocity.Y -= input * speed;
+		//input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
+		////UE_LOG(LogTemp, Warning, TEXT("GetRightOutput(): %f"), brain->GetRightOutput());
+		//CurrentVelocity.X = input * speed;
+		//input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
+		////UE_LOG(LogTemp, Warning, TEXT("GetLeftOutput(): %f"), brain->GetLeftOutput());
+		//CurrentVelocity.X -= input * speed;
+		//input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
+		////UE_LOG(LogTemp, Warning, TEXT("GetUpOutput(): %f"), brain->GetUpOutput());
+		//CurrentVelocity.Y = input * speed;
+		//input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
+		////UE_LOG(LogTemp, Warning, TEXT("GetDownOutput(): %f"), brain->GetDownOutput());
+		//CurrentVelocity.Y -= input * speed;
+
+		CurrentVelocity.X = brain->GetRightOutput();// *speed;
+		CurrentVelocity.Y = brain->GetLeftOutput(); //* speed;
+		CurrentVelocity.Normalize();
+
+		// Steer vec relative to vector from dog to sheep
+		CurrentSteerVec.X = cos(steerTheta)*CurrentVelocity.X - sin(steerTheta)*CurrentVelocity.Y;
+		CurrentSteerVec.Y = sin(steerTheta)*CurrentVelocity.X + cos(steerTheta)*CurrentVelocity.Y;
+		// Normalize?
+		CurrentSteerVec.Normalize();
+
+		//CurrentVelocity.X = (brain->GetRightOutput() > thresh ? 1.0f : 0.0f) * speed;
+		//CurrentVelocity.X += (brain->GetRightOutput() < -thresh ? -1.0f : 0.0f) * speed;
+		//CurrentVelocity.Y = (brain->GetLeftOutput() > thresh ? 1.0f : 0.0f) * speed;
+		//CurrentVelocity.Y += (brain->GetLeftOutput() < -thresh ? -1.0f : 0.0f) * speed;
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn: No brain!"));
 	}
 
 	//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
-	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
+	FVector NewLocation = GetActorLocation() + (CurrentSteerVec * speed * DeltaTime);
 
 	//if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
 	SetActorLocation(NewLocation);
@@ -132,5 +147,15 @@ void ADogAIPawn::Reset() {
 void ADogAIPawn::SetRandomStartLocation(FBoxSphereBounds bounds) {
 	float randX = -bounds.Origin.X - bounds.BoxExtent.X + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.X)));
 	float randY = -bounds.Origin.Y - bounds.BoxExtent.Y + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.Y)));
+	// randX = randX*0.5;
+	// randY = (randX - bounds.BoxExtent.Y) * 0.5;
+
 	startLocation = FVector(randX, randY, startLocation.Z);
+}
+
+void ADogAIPawn::SetTheta(FVector dogPos, FVector herdPos){
+	FVector dogToHerd = herdPos - dogPos;
+	FVector xAxis = FVector(1, 0, 0);
+	float cosTheta = FVector::DotProduct(dogToHerd, xAxis) / (dogToHerd.Size() * xAxis.Size());
+	steerTheta = acos(cosTheta);
 }
