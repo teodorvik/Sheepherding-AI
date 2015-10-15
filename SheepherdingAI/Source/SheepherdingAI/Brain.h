@@ -18,6 +18,8 @@ public:
 	void CalcFitness();
 	float GetFitness();
 
+	void PrintBrainStuff(int index);
+
 private:
 	static const int numOutput = 4; //Output: left, right, top, down
 	static const int numInput = 6; //Input: sheep xpos, ypos, xvel, yvel, goal xpos, goal ypos
@@ -25,6 +27,7 @@ private:
 	
 	float currentOutput[numOutput];
 	float currentInput[numInput];
+	float currentScaledInput[numInput];
 	float weights[numWeights];
 
 	float fitness;

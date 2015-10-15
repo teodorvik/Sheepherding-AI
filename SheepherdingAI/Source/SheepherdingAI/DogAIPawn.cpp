@@ -152,17 +152,21 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	//float spread;
 	//spread = HerdSpread();
 
-	float thresh = 0.75;
+	float thresh = 0.5;
 	float input;
 
 	if (brain) {
 		input = brain->GetRightOutput() > thresh ? 1.0f : 0.0f;
+		//UE_LOG(LogTemp, Warning, TEXT("GetRightOutput(): %f"), brain->GetRightOutput());
 		CurrentVelocity.X = input * speed;
 		input = brain->GetLeftOutput() > thresh ? 1.0f : 0.0f;
+		//UE_LOG(LogTemp, Warning, TEXT("GetLeftOutput(): %f"), brain->GetLeftOutput());
 		CurrentVelocity.X -= input * speed;
 		input = brain->GetUpOutput() > thresh ? 1.0f : 0.0f;
+		//UE_LOG(LogTemp, Warning, TEXT("GetUpOutput(): %f"), brain->GetUpOutput());
 		CurrentVelocity.Y = input * speed;
 		input = brain->GetDownOutput() > thresh ? 1.0f : 0.0f;
+		//UE_LOG(LogTemp, Warning, TEXT("GetDownOutput(): %f"), brain->GetDownOutput());
 		CurrentVelocity.Y -= input * speed;
 	}
 	else {
@@ -173,7 +177,7 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
 
 	//if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
-		SetActorLocation(NewLocation);
+	SetActorLocation(NewLocation);
 }
 
 void ADogAIPawn::Reset() {

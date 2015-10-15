@@ -41,11 +41,15 @@ AHerdActor::AHerdActor()
 	dogDistance = 600.0f;
 	dogSeparationWeight = 100.0f;
 
-	isTraining = true;
-	currentGeneration = 1;
+	// Evolution parameters
 	maxGenerations = 5;
 	population = 1;
+	mutationRate = 0.1f;
+	elitePercentage = 0.2f;
+	mutationSize = 0.02f;
 
+	currentGeneration = 1;
+	isTraining = true;
 	currentTime = 0.0f;
 	maxTime = 10.0f;
 
@@ -264,19 +268,6 @@ void AHerdActor::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 
-	GEngine->ClearOnScreenDebugMessages();
-
-	FString trainString;
-	if (isTraining)
-		trainString = "true";
-	else
-		trainString = "false";
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DeltaTime: " + FString::SanitizeFloat(DeltaTime)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Is training: " + trainString));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Current generation: " + FString::FromInt(currentGeneration)));
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Max generations: " + FString::FromInt(maxGenerations)));
-
 	// Check if pointers are set
 	bool error = false;
 	if (!dog) {
@@ -295,6 +286,19 @@ void AHerdActor::Tick( float DeltaTime )
 	}
 
 	if (error) return;
+
+	// Print stuff
+	GEngine->ClearOnScreenDebugMessages();
+
+	if (!dog->useAI)
+		isTraining = false;
+
+	FString trainString = isTraining ? "true" : "false";
+
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DeltaTime: " + FString::SanitizeFloat(DeltaTime)));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Is training: " + trainString));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Current generation: " + FString::FromInt(currentGeneration)));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Max generations: " + FString::FromInt(maxGenerations)));
 
 	// Training:
 	//
@@ -315,41 +319,60 @@ void AHerdActor::Tick( float DeltaTime )
 
 		for (int i = 0; i < population; i++) {
 			//// Give the dog a bone... I mean brain
-			if (dog) {
-				dog->brain = brains[i];
-			}
+			dog->brain = brains[i];
 
 			// Update until done
 			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
-				UE_LOG(LogTemp, Warning, TEXT("Training!"));
-				UpdateFlocking(fakeDeltaTime);
+				//UE_LOG(LogTemp, Warning, TEXT("Training!"));
+				//FVector dogPos = dog->GetActorLocation();
+				//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
+
+				// Set neural network inputs
+				FVector sheepPos = sheepArray[0]->GetActorLocation();
+				FVector sheepVelocity = sheepArray[0]->GetVelocity();
+				brains[i]->SetCurrentInput(sheepPos.X, sheepPos.Y, sheepVelocity.X, sheepVelocity.Y, goalCenter.X, goalCenter.Y);
+
+				// Feed forward, i.e. calculate new outputs from the inputs
+				brains[i]->Forward();
+
+				// Update dog movement. Will use outputs from the neural network
+				//UE_LOG(LogTemp, Warning, TEXT("UpdateAIMovement: %d"), i);
 				dog->UpdateAIMovement(fakeDeltaTime);
+
+				// Update sheep movement
+				UpdateFlocking(fakeDeltaTime);
+
 				currentTime += fakeDeltaTime;
 			}
 
+			//brains[i]->PrintBrainStuff(i);
+
+			FVector dogPos = dog->GetActorLocation();
+			//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
 			FVector sheepPos = sheepArray[0]->GetActorLocation();
-			UE_LOG(LogTemp, Warning, TEXT("Sheep's location is %s"), *(sheepPos.ToString()));
+			//UE_LOG(LogTemp, Warning, TEXT("Sheep's location is %s"), *(sheepPos.ToString()));
 			FVector sheepVelocity = sheepArray[0]->GetVelocity();
 
 			// Todo: Calculate fitness value
 			brains[i]->SetCurrentInput(sheepPos[0], sheepPos[1], sheepVelocity[0], sheepVelocity[1], goalCenter[0], goalCenter[1]);
 			brains[i]->CalcFitness();
+
+			Reset();
 		}
 
-		for (int i = 0; i < brains.size(); i++) {
-			//UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f unsorted"), i, brains[i]->GetFitness());
-		}
-		// Todo: Get the best 20 out of 100 population and create 80 new.
-		// Then perform crossover and mutations
-
+		// Sort the brain vector based on fitness
 		std::sort(brains.begin(), brains.end(), CompareBrain);
-
 		for (int i = 0; i < brains.size(); i++) {
-			//UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+			UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
 		}
+
+		// Set the dog's brain to the one with the best fitness
+		dog->brain = brains[0];
+
+		// Todo: Get the best 20 out of 100 population and create 80 new.
+		// Then perform crossover and 
 
 		isTraining = false;
-		Reset();
 	}
 	// If not training:
 	// Show off the best dog from the current generation. Then train some more!

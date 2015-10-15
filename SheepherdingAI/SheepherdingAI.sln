@@ -1,7 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-# UnrealEngineGeneratedSolutionVersion=1.0
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Engine", "Engine", "{D1617630-1BFC-48AE-9920-20B49620AFF3}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Games", "Games", "{0BC424CC-4224-4FC2-BB96-D661FD6D8C89}"
@@ -24,6 +25,21 @@ Global
 		Shipping|Win64 = Shipping|Win64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame Editor|Win32.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame Editor|Win32.Build.0 = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame Editor|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame|Win32.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame|Win32.Build.0 = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.DebugGame|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development Editor|Win32.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development Editor|Win32.Build.0 = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development Editor|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development|Win32.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development|Win32.Build.0 = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Development|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Shipping|Win32.ActiveCfg = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Shipping|Win32.Build.0 = BuiltWithUnrealBuildTool|Win32
+		{412805EB-04AA-44E1-811B-7158B8BCA2BD}.Shipping|Win64.ActiveCfg = BuiltWithUnrealBuildTool|Win32
 		{80FA60C3-86E7-4B46-A9AC-A61D4D3BA4D9}.DebugGame Editor|Win32.ActiveCfg = DebugGame_Editor|Win32
 		{80FA60C3-86E7-4B46-A9AC-A61D4D3BA4D9}.DebugGame Editor|Win32.Build.0 = DebugGame_Editor|Win32
 		{80FA60C3-86E7-4B46-A9AC-A61D4D3BA4D9}.DebugGame Editor|Win64.ActiveCfg = DebugGame_Editor|x64

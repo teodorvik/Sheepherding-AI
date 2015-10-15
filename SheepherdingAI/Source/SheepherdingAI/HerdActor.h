@@ -77,7 +77,13 @@ private:
 	UPROPERTY(EditAnywhere)
 	int32 maxGenerations;
 	UPROPERTY(EditAnywhere)
-	int32 population;
+	int32 population; // The number of random networks to try out
+	UPROPERTY(EditAnywhere)
+	float mutationRate; // The probability that a weight will get mutated
+	UPROPERTY(EditAnywhere)
+	float elitePercentage; // How many percentage will be kept each generation
+	UPROPERTY(EditAnywhere)
+	float mutationSize; // The stdev of the noise added when mutating
 
 	float currentTime;
 	UPROPERTY(EditAnywhere)
