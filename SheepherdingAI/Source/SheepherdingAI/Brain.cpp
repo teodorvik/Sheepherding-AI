@@ -96,3 +96,15 @@ void Brain::PrintBrainStuff(int index) {
 	UE_LOG(LogTemp, Warning, TEXT("Brain: %d: UpOutput: %f"), index, GetUpOutput());
 	UE_LOG(LogTemp, Warning, TEXT("Brain: %d: DownOutput: %f"), index, GetDownOutput());
 }
+
+void Brain::Mutate(float mutationRate, float mutationSize) {
+	for (int i = 0; i < numWeights; i++) {
+		// Range 0.0 -> 1.0 inclusive
+		float randMutation = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		if (randMutation < mutationRate){
+			// How much to mutate the selected weight. Range -mutationSize/2 -> mutationSize/2
+			float randMutationInRange = (static_cast <float> (rand()) / (static_cast <float> (RAND_MAX)) - 0.5f) * mutationSize;
+			weights[i] += randMutationInRange;
+		}
+	}
+}

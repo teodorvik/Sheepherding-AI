@@ -19,6 +19,8 @@ public:
 	float GetFitness();
 
 	void PrintBrainStuff(int index);
+	
+	void Mutate(float mutationRate, float mutationSize);
 
 private:
 	static const int numOutput = 4; //Output: left, right, top, down

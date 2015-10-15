@@ -369,7 +369,22 @@ void AHerdActor::Tick( float DeltaTime )
 		// Set the dog's brain to the one with the best fitness
 		dog->brain = brains[0];
 
-		// Todo: Get the best 20 out of 100 population and create 80 new.
+		// Keep the 20 best brains and replace the remaing brains with a random copy of the best brains
+		int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
+		for (int i = selectedPop; i < brains.size(); i++){
+			// random int in range 0 -> selectedPop
+			int randInRange = rand() % (int)(selectedPop + 1);
+			brains[i] = brains[randInRange];
+		}
+
+		// Mutate!
+		// float mutationRate; - The probability that a weight will get mutated
+		// float mutationSize; - The stdev of the noise added when mutating
+		for (int i = 0; i < brains.size(); i++) {
+			brains[i]->Mutate(mutationRate, mutationSize);
+		}
+
+
 		// Then perform crossover and 
 
 		isTraining = false;
