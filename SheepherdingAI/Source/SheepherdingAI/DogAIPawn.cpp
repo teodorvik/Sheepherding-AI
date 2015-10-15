@@ -19,6 +19,7 @@ ADogAIPawn::ADogAIPawn()
 	brain = NULL;
 
 	startLocation = FVector(0.0f, 0.0f, 0.0f);
+	directionAngle = 0.0f;
 
 	UE_LOG(LogTemp, Warning, TEXT("ADogAIPawn::ADogAIPawn()"));
 }
@@ -114,15 +115,21 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 		////UE_LOG(LogTemp, Warning, TEXT("GetDownOutput(): %f"), brain->GetDownOutput());
 		//CurrentVelocity.Y -= input * speed;
 
-		CurrentVelocity.X = brain->GetRightOutput();// *speed;
-		CurrentVelocity.Y = brain->GetLeftOutput(); //* speed;
-		CurrentVelocity.Normalize();
+		//CurrentVelocity.X = brain->GetRightOutput() * speed;
+		//CurrentVelocity.Y = brain->GetLeftOutput() * speed;
 
-		// Steer vec relative to vector from dog to sheep
-		CurrentSteerVec.X = cos(steerTheta)*CurrentVelocity.X - sin(steerTheta)*CurrentVelocity.Y;
-		CurrentSteerVec.Y = sin(steerTheta)*CurrentVelocity.X + cos(steerTheta)*CurrentVelocity.Y;
-		// Normalize?
-		CurrentSteerVec.Normalize();
+		directionAngle += brain->GetTurnOutput();
+
+		if (directionAngle > 2.0f * PI) {
+			directionAngle -= 2.0f * PI;
+		}
+		if (directionAngle < 0.0f) {
+			directionAngle += 2.0f * PI;
+		}
+
+		float forwardSpeed = brain->GetMoveForwardOutput() * speed;
+		CurrentVelocity.X = cos(directionAngle) * forwardSpeed;
+		CurrentVelocity.Y = sin(directionAngle) * forwardSpeed;
 
 		//CurrentVelocity.X = (brain->GetRightOutput() > thresh ? 1.0f : 0.0f) * speed;
 		//CurrentVelocity.X += (brain->GetRightOutput() < -thresh ? -1.0f : 0.0f) * speed;
@@ -134,7 +141,7 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	}
 
 	//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
-	FVector NewLocation = GetActorLocation() + (CurrentSteerVec * speed * DeltaTime);
+	FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
 
 	//if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds))
 	SetActorLocation(NewLocation);
@@ -147,15 +154,8 @@ void ADogAIPawn::Reset() {
 void ADogAIPawn::SetRandomStartLocation(FBoxSphereBounds bounds) {
 	float randX = -bounds.Origin.X - bounds.BoxExtent.X + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.X)));
 	float randY = -bounds.Origin.Y - bounds.BoxExtent.Y + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.Y)));
-	// randX = randX*0.5;
-	// randY = (randX - bounds.BoxExtent.Y) * 0.5;
+	//randX = randX*0.6;
+	//randY = (randX - bounds.BoxExtent.Y) * 0.6;
 
 	startLocation = FVector(randX, randY, startLocation.Z);
-}
-
-void ADogAIPawn::SetTheta(FVector dogPos, FVector herdPos){
-	FVector dogToHerd = herdPos - dogPos;
-	FVector xAxis = FVector(1, 0, 0);
-	float cosTheta = FVector::DotProduct(dogToHerd, xAxis) / (dogToHerd.Size() * xAxis.Size());
-	steerTheta = acos(cosTheta);
 }

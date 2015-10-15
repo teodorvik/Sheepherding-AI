@@ -33,8 +33,7 @@ public:
 	void SetBounds(UPARAM(ref) class UBoxComponent* &box);
 
 	FVector CurrentVelocity;
-	FVector CurrentSteerVec;
-
+	float directionAngle;
 	Brain* brain;
 	bool isTraining;
 
@@ -45,13 +44,10 @@ public:
 	UPROPERTY(EditAnywhere)
 	USceneComponent* OurVisibleComponent;
 
-	void SetTheta(FVector dogPos, FVector herdPos);
-
 private:
 	FVector startLocation;
 	TArray<class ASheepPawn*> sheepArray;
 	UBoxComponent* box;
-	float steerTheta;
 
 	bool IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds);
 };

@@ -11,6 +11,13 @@ bool CompareBrain(Brain* b1, Brain* b2)
 	return b1->GetFitness() < b2->GetFitness();
 }
 
+float SignedAngle(FVector2D v1, FVector2D v2) {
+	v1.Normalize();
+	v2.Normalize();
+	float perpDot = v1.X * v2.Y - v1.Y * v2.X;
+	return atan2(perpDot, FVector2D::DotProduct(v1, v2));
+}
+
 // Sets default values
 AHerdActor::AHerdActor()
 {
@@ -54,7 +61,7 @@ AHerdActor::AHerdActor()
 	isTraining = true;
 	currentTime = 0.0f;
 	maxTime = 10.0f;
-	fakeDeltaTime = 1.0f / 30.0f;
+	fakeDeltaTime = 1.0f / 15.0f;
 
 	displayMode = false;
 
@@ -138,66 +145,70 @@ void AHerdActor::Tick( float DeltaTime )
 			//// Give the dog a bone... I mean brain
 			dog->brain = brains[i];
 
-			// Update until done
-			while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
-				//UE_LOG(LogTemp, Warning, TEXT("Training!"));
-				//FVector dogPos = dog->GetActorLocation();
-				//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
+			brains[i]->ResetFitness();
 
-				// Set neural network inputs
+			// Do N tests for every brain in order to get an average fitness value. See if it can handle different starting locations
+			int N = 1;
+			for (int j = 0; j < N; j++) {
+				// Update until done
+				while (!(AreAllSheepInGoal() || currentTime > maxTime)) {
+					//UE_LOG(LogTemp, Warning, TEXT("Training!"));
+					//FVector dogPos = dog->GetActorLocation();
+					//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
+
+					// Set neural network inputs
+					FVector dogPos = dog->GetActorLocation();
+					FVector relativeHerdPos = GetHerdCenter() - dogPos;
+					float herdDist = relativeHerdPos.Size();
+					FVector2D dogAngle = FVector2D(cos(dog->directionAngle), sin(dog->directionAngle));
+					float herdAngle = SignedAngle(dogAngle, FVector2D(relativeHerdPos.X, relativeHerdPos.Y));
+					FVector relativeGoalPos = goalCenter - dogPos;
+					float goalDist = relativeGoalPos.Size();
+					float goalAngle = SignedAngle(dogAngle, FVector2D(relativeGoalPos.X, relativeGoalPos.Y));
+
+					brains[i]->SetCurrentInput(herdDist, herdAngle, goalDist, goalAngle);
+
+					// Feed forward, i.e. calculate new outputs from the inputs
+					brains[i]->Forward();
+
+					// Update dog movement. Will use outputs from the neural network
+					//UE_LOG(LogTemp, Warning, TEXT("UpdateAIMovement: %d"), i);
+					dog->UpdateAIMovement(fakeDeltaTime);
+
+					// Update sheep movement
+					UpdateFlocking(fakeDeltaTime);
+
+					currentTime += fakeDeltaTime;
+				}
+
 				FVector dogPos = dog->GetActorLocation();
+				//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
 				FVector herdPos = GetHerdCenter();
 				FVector herdVelocity = GetHerdVelocity();
-				brains[i]->SetCurrentInput(herdPos.X, herdPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X, goalCenter.Y, dogPos.X, dogPos.Y);
 
-				// Feed forward, i.e. calculate new outputs from the inputs
-				brains[i]->Forward();
+				// Todo: Calculate fitness value
+				//brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
 
-				// Update dog movement. Will use outputs from the neural network
-				//UE_LOG(LogTemp, Warning, TEXT("UpdateAIMovement: %d"), i);
-				dog->UpdateAIMovement(fakeDeltaTime);
+				brains[i]->CalcFitness(herdPos, goalCenter);
 
-				// Update sheep movement
-				UpdateFlocking(fakeDeltaTime);
-
-				currentTime += fakeDeltaTime;
+				Reset();
 			}
-
-			FVector dogPos = dog->GetActorLocation();
-			//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
-			FVector herdPos = GetHerdCenter();
-			FVector herdVelocity = GetHerdVelocity();
-
-			dog->SetTheta(dogPos, herdPos);
-
-			// Todo: Calculate fitness value
-			//brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
-			
-			brains[i]->CalcFitness(herdPos, goalCenter);
-
-			Reset();
 		}
 
 		// Sort the brain vector based on fitness
 		std::sort(brains.begin(), brains.end(), CompareBrain);
 
-		// Set the dog's brain to the one with the best fitness
-
+		// Generate new weights if dog->brain is better or equal (can't be better) than the best brain
+		// dog->brain will be a random brain in the array so this doent's make that much sence. But it
+		// will trigger if the fitness is the same for all brains.. so that's good
 		if (dog->brain->GetFitness() <= brains[0]->GetFitness() && currentGeneration == 1) {
 			for (int i = floor(brains.size()/2.0f); i < brains.size(); i++) {
 				brains[i]->GenerateNewWeights(); // (mutationRate, mutationSize*2.0f);
 			}
 			UE_LOG(LogTemp, Warning, TEXT("Generates new weights for half of the brains"));
 		} else {
+			// Set the dog's brain to the one with the best fitness
 			dog->brain = brains[0];
-
-			if (currentGeneration % showGenerationInterval == 0) {
-				/*for (int i = 0; i < brains.size(); i++) {
-					UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
-				}*/
-
-				isTraining = false;
-			}
 
 			// Keep the best brains and replace the remaing brains with a random copy of the best brains
 			int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
@@ -215,6 +226,13 @@ void AHerdActor::Tick( float DeltaTime )
 				brains[i]->Mutate(mutationRate, mutationSize);
 			}
 
+			// Check if it's time to show a real time generation
+			if (currentGeneration % showGenerationInterval == 0) {
+				isTraining = false;
+			}
+
+			// If the next generation will be a training generation, increase generation counter
+			// and set the dog's start location. This will be done in the "non-training part" otherwise.
 			if (isTraining) {
 				dog->SetRandomStartLocation(fenceBox->Bounds);
 				currentGeneration++;
@@ -231,9 +249,14 @@ void AHerdActor::Tick( float DeltaTime )
 		if (dog->useAI && dog->brain) {
 			// Set neural network inputs
 			FVector dogPos = dog->GetActorLocation();
-			FVector herdPos = GetHerdCenter();
-			FVector herdVelocity = GetHerdVelocity();
-			dog->brain->SetCurrentInput(herdPos.X, herdPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X, goalCenter.Y, dogPos.X, dogPos.Y);
+			FVector relativeHerdPos = GetHerdCenter() - dogPos;
+			float herdDist = relativeHerdPos.Size();
+			FVector2D dogAngle = FVector2D(cos(dog->directionAngle), sin(dog->directionAngle));
+			float herdAngle = SignedAngle(dogAngle, FVector2D(relativeHerdPos.X, relativeHerdPos.Y));
+			FVector relativeGoalPos = goalCenter - dogPos;
+			float goalDist = relativeGoalPos.Size();
+			float goalAngle = SignedAngle(dogAngle, FVector2D(relativeGoalPos.X, relativeGoalPos.Y));
+			dog->brain->SetCurrentInput(herdDist, herdAngle, goalDist, goalAngle);
 
 			// Feed forward, i.e. calculate new outputs from the inputs
 			dog->brain->Forward();
@@ -476,7 +499,7 @@ void AHerdActor::UpdateFlocking(float DeltaTime) {
 		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d sdogsepat: %s"), i, *((dogSeparationVector[i] * dogSeparationWeight).ToString()));
 
 		FVector oldVelocity = sheep->GetSheepVelocity();
-		FVector newVelocity = (oldVelocity + acceleration * DeltaTime) * sheepFriction;
+		FVector newVelocity = (oldVelocity * sheepFriction + acceleration * DeltaTime) * sheepFriction;
 		newVelocity = newVelocity.GetClampedToMaxSize(maxSpeed);
 		//UE_LOG(LogTemp, Warning, TEXT("Acceleration %s"), *acceleration.ToString());
 
