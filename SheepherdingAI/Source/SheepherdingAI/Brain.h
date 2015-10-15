@@ -20,7 +20,7 @@ public:
 	void PrintBrainStuff(int index);
 	void Mutate(float mutationRate, float mutationSize);
 	void CopyWeights(Brain* brain);
-
+	void Crossover(Brain* parent1, Brain* parent2);
 	float GetWeight(int index);
 
 	void PrintWeights();

@@ -109,6 +109,18 @@ void Brain::Mutate(float mutationRate, float mutationSize) {
 	}
 }
 
+void Brain::Crossover(Brain* parent1, Brain* parent2) {
+	for (int i = 0; i < numWeights; i++) {
+		float coin = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		if (coin < 0.5f) {
+			weights[i] = parent1->GetWeight(i);
+		}
+		else {
+			weights[i] = parent2->GetWeight(i);
+		}
+	}
+}
+
 void Brain::CopyWeights(Brain* brain) {
 	for (int i = 0; i < numWeights; i++) {
 		weights[i] = brain->GetWeight(i);

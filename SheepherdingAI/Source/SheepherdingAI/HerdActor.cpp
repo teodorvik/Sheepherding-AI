@@ -191,9 +191,11 @@ void AHerdActor::Tick( float DeltaTime )
 		int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
 		
 		for (int i = selectedPop; i < brains.size(); i++){
-			// random int in range 0 -> selectedPop
-			int randInRange = rand() % (int)(selectedPop + 1);
-			brains[i]->CopyWeights(brains[randInRange]);
+			// random parents in range 0 -> selectedPop
+			int randParent1 = rand() % (int)(selectedPop + 1);
+			int randParent2 = rand() % (int)(selectedPop + 1);
+			// Parents creates a new child with coin toss
+			brains[i]->Crossover(brains[randParent1], brains[randParent2]);
 			// Mutate the new brain
 			// float mutationRate; - The probability that a weight will get mutated
 			// float mutationSize; - The stdev of the noise added when mutating
