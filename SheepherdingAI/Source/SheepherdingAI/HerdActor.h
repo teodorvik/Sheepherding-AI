@@ -65,6 +65,8 @@ private:
 	UPROPERTY(EditAnywhere)
 	float maxSpeed;
 	UPROPERTY(EditAnywhere)
+	float sheepFriction;
+	UPROPERTY(EditAnywhere)
 	float dogDistance;
 	UPROPERTY(EditAnywhere)
 	float dogSeparationWeight;
@@ -74,6 +76,8 @@ private:
 	int currentGeneration;
 	UPROPERTY(EditAnywhere)
 	int32 maxGenerations;
+	UPROPERTY(EditAnywhere)
+	int32 showGenerationInterval;
 	UPROPERTY(EditAnywhere)
 	int32 population; // The number of random networks to try out
 	UPROPERTY(EditAnywhere)
@@ -86,13 +90,14 @@ private:
 	float currentTime;
 	UPROPERTY(EditAnywhere)
 	float maxTime;
+	float fakeDeltaTime;
 
 	bool isSheepArraySet;
 	TArray<class ASheepPawn*> sheepArray;
 	ADogAIPawn* dog;
 	std::vector<Brain*> brains;
 
-	FVector2D goalCenter;
+	FVector goalCenter;
 
 	// Flocking stuff
 	FVector Separate(int index);

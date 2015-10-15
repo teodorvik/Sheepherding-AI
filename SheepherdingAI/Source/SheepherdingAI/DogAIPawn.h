@@ -25,6 +25,7 @@ public:
 
 	void UpdateAIMovement(float DeltaTime);
 	void Reset();
+	void SetRandomStartLocation(FBoxSphereBounds bounds);
 
 	UFUNCTION(BlueprintCallable, Category = "AIDog")
 	void SetSheepArray(UPARAM(ref) TArray<class ASheepPawn*> &sheep);

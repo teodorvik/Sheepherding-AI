@@ -40,17 +40,14 @@ void ADogAIPawn::Tick( float DeltaTime )
 {
 	Super::Tick( DeltaTime );
 	
-	if (useAI) {
-		UpdateAIMovement(DeltaTime);
-	}
-	else {
+	if (!useAI) {
 		if (!CurrentVelocity.IsZero())
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("Delta position: %s"), *((CurrentVelocity * DeltaTime).ToString()));
 			FVector NewLocation = GetActorLocation() + (CurrentVelocity * DeltaTime);
 
 			if (!box) {
-				UE_LOG(LogTemp, Warning, TEXT("DogAIPawn: No bounds set"));
+				//UE_LOG(LogTemp, Warning, TEXT("DogAIPawn: No bounds set"));
 				SetActorLocation(NewLocation);
 			}
 			else if (IsSphereInBounds(NewLocation, 50.0f, box->Bounds)) {
@@ -100,7 +97,7 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 	//float spread;
 	//spread = HerdSpread();
 
-	float thresh = 0.5;
+	float thresh = 0.75;
 	float input;
 
 	if (brain) {
@@ -130,4 +127,10 @@ void ADogAIPawn::UpdateAIMovement(float DeltaTime) {
 
 void ADogAIPawn::Reset() {
 	SetActorLocation(startLocation);
+}
+
+void ADogAIPawn::SetRandomStartLocation(FBoxSphereBounds bounds) {
+	float randX = -bounds.Origin.X - bounds.BoxExtent.X + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.X)));
+	float randY = -bounds.Origin.Y - bounds.BoxExtent.Y + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (2.0f * bounds.BoxExtent.Y)));
+	startLocation = FVector(randX, randY, startLocation.Z);
 }

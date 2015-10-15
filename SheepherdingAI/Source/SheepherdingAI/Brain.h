@@ -6,7 +6,7 @@ public:
 	Brain();
 	~Brain();
 
-	void SetCurrentInput(float sheepPosX, float sheepPosY, float sheepVelX, float sheepVelY, float goalPosX, float goalPosY);
+	void SetCurrentInput(float sheepPosX, float sheepPosY, float sheepVelX, float sheepVelY, float goalPosX, float goalPosY, float dogPosX, float dogPosY);
 	float GetLeftOutput();
 	float GetRightOutput();
 	float GetUpOutput();
@@ -15,14 +15,19 @@ public:
 	// Calculate outputs from the inputs
 	void Forward();
 	
-	void CalcFitness();
+	void CalcFitness(FVector sheepPos, FVector goalPos);
 	float GetFitness();
-
 	void PrintBrainStuff(int index);
+	void Mutate(float mutationRate, float mutationSize);
+	void CopyWeights(Brain* brain);
+
+	float GetWeight(int index);
+
+	void PrintWeights();
 
 private:
 	static const int numOutput = 4; //Output: left, right, top, down
-	static const int numInput = 6; //Input: sheep xpos, ypos, xvel, yvel, goal xpos, goal ypos
+	static const int numInput = 8; //Input: sheep xpos, sheep ypos, sheep xvel, sheep yvel, goal xpos, goal ypos, dog xpos, dog ypos
 	static const int numWeights = numInput * numOutput;
 	
 	float currentOutput[numOutput];

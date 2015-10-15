@@ -38,11 +38,13 @@ AHerdActor::AHerdActor()
 	alignmentDistance = 600.0f;
 	maxForce = 5000.0f;
 	maxSpeed = 200.0f;
+	sheepFriction = 0.9f;
 	dogDistance = 600.0f;
 	dogSeparationWeight = 100.0f;
 
 	// Evolution parameters
 	maxGenerations = 5;
+	showGenerationInterval = 50;
 	population = 1;
 	mutationRate = 0.1f;
 	elitePercentage = 0.2f;
@@ -52,6 +54,7 @@ AHerdActor::AHerdActor()
 	isTraining = true;
 	currentTime = 0.0f;
 	maxTime = 10.0f;
+	fakeDeltaTime = 1.0f / 30.0f;
 
 	dog = NULL;
 	isSheepArraySet = false;
@@ -106,10 +109,13 @@ void AHerdActor::Tick( float DeltaTime )
 
 	FString trainString = isTraining ? "true" : "false";
 
-	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DeltaTime: " + FString::SanitizeFloat(DeltaTime)));
+	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("DeltaTime: " + FString::SanitizeFloat(fakeDeltaTime)));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Is training: " + trainString));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Current generation: " + FString::FromInt(currentGeneration)));
 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Max generations: " + FString::FromInt(maxGenerations)));
+
+	if (dog->brain)
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Best fitness: " + FString::SanitizeFloat(dog->brain->GetFitness())));
 
 	// Training:
 	//
@@ -126,8 +132,6 @@ void AHerdActor::Tick( float DeltaTime )
 
 	//UE_LOG(LogTemp, Warning, TEXT("IM GONNA TRAIN!"));
 	if (isTraining && dog->useAI) {
-		float fakeDeltaTime = 1.0f / 60.0f;
-
 		for (int i = 0; i < population; i++) {
 			//// Give the dog a bone... I mean brain
 			dog->brain = brains[i];
@@ -142,7 +146,7 @@ void AHerdActor::Tick( float DeltaTime )
 				FVector dogPos = dog->GetActorLocation();
 				FVector herdPos = GetHerdCenter();
 				FVector herdVelocity = GetHerdVelocity();
-				brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
+				brains[i]->SetCurrentInput(herdPos.X, herdPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X, goalCenter.Y, dogPos.X, dogPos.Y);
 
 				// Feed forward, i.e. calculate new outputs from the inputs
 				brains[i]->Forward();
@@ -157,46 +161,84 @@ void AHerdActor::Tick( float DeltaTime )
 				currentTime += fakeDeltaTime;
 			}
 
-			//brains[i]->PrintBrainStuff(i);
-
 			FVector dogPos = dog->GetActorLocation();
 			//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
 			FVector herdPos = GetHerdCenter();
 			FVector herdVelocity = GetHerdVelocity();
 
 			// Todo: Calculate fitness value
-			brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
-			brains[i]->CalcFitness();
+			//brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
+			brains[i]->CalcFitness(herdPos, goalCenter);
 
 			Reset();
 		}
 
 		// Sort the brain vector based on fitness
 		std::sort(brains.begin(), brains.end(), CompareBrain);
-		for (int i = 0; i < brains.size(); i++) {
-			UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
-		}
 
 		// Set the dog's brain to the one with the best fitness
 		dog->brain = brains[0];
 
-		// Todo: Get the best 20 out of 100 population and create 80 new.
-		// Then perform crossover and 
+		if (currentGeneration % showGenerationInterval == 0) {
+			for (int i = 0; i < brains.size(); i++) {
+				UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+			}
 
-		isTraining = false;
+			isTraining = false;
+		}
+
+		// Keep the best brains and replace the remaing brains with a random copy of the best brains
+		int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
+		
+		for (int i = selectedPop; i < brains.size(); i++){
+			// random int in range 0 -> selectedPop
+			int randInRange = rand() % (int)(selectedPop + 1);
+			brains[i]->CopyWeights(brains[randInRange]);
+			// Mutate the new brain
+			// float mutationRate; - The probability that a weight will get mutated
+			// float mutationSize; - The stdev of the noise added when mutating
+			brains[i]->Mutate(mutationRate, mutationSize);
+		}
+
+		if (isTraining) {
+			//dog->SetRandomStartLocation(fenceBox->Bounds);
+			currentGeneration++;
+		}
 	}
 	// If not training:
 	// Show off the best dog from the current generation. Then train some more!
 	else {
-		//UE_LOG(LogTemp, Warning, TEXT("Not training: currentTime: %s"), *FString::SanitizeFloat(currentTime));
-		UpdateFlocking(DeltaTime);
+		
+		if (dog->useAI && dog->brain) {
+			// Set neural network inputs
+			FVector dogPos = dog->GetActorLocation();
+			FVector herdPos = GetHerdCenter();
+			FVector herdVelocity = GetHerdVelocity();
+			dog->brain->SetCurrentInput(herdPos.X, herdPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X, goalCenter.Y, dogPos.X, dogPos.Y);
+
+			// Feed forward, i.e. calculate new outputs from the inputs
+			dog->brain->Forward();
+		}
+
+		dog->UpdateAIMovement(fakeDeltaTime);
+		UpdateFlocking(fakeDeltaTime);
 
 		if (AreAllSheepInGoal() || currentTime > maxTime) {
-			Reset();
+			FVector herdPos = GetHerdCenter();
+			if (dog->useAI && dog->brain) {
+				dog->brain->CalcFitness(herdPos, goalCenter);
+				UE_LOG(LogTemp, Warning, TEXT("Best brain fitness: %f"), dog->brain->GetFitness());
+				//UE_LOG(LogTemp, Warning, TEXT("Best brain wieghts:"));
+				//dog->brain->PrintWeights();
+			}
+
+			//dog->SetRandomStartLocation(fenceBox->Bounds);
 			currentGeneration++;
+
+			Reset();
 			isTraining = true;
 		}
-		currentTime += DeltaTime;
+		currentTime += fakeDeltaTime;
 	}
 
 	//UE_LOG(LogTemp, Warning, TEXT("Box: %s"), *(Box->GetScaledBoxExtent().ToString()));	
@@ -259,6 +301,13 @@ FVector AHerdActor::Separate(int index) {
 	if (count > 0)
 		separationSum /= count;
 
+	if (separationSum.Size() > 0.0f) {
+		separationSum.Normalize();
+		separationSum *= maxSpeed;
+		separationSum -= sheep->GetSheepVelocity();
+		separationSum = separationSum.GetClampedToMaxSize(maxForce);
+	}
+	
 	return separationSum;
 }
 
@@ -281,13 +330,19 @@ FVector AHerdActor::Align(int index) {
 		}
 	}
 
-	if (count > 0)
+	if (count > 0) {
 		meanVelocity /= count;
 
-	meanVelocity = meanVelocity.GetClampedToMaxSize(maxForce);
 
-	return meanVelocity;
-
+		//meanVelocity.Normalize();
+		//meanVelocity *= maxSpeed;
+		FVector steer = meanVelocity - sheep->GetSheepVelocity();
+		steer = steer.GetClampedToMaxSize(maxForce);
+		return steer;
+	}
+	else {
+		return FVector(0.0f, 0.0f, 0.0f);
+	}
 }
 
 // Used for sheep flocking
@@ -309,9 +364,12 @@ FVector AHerdActor::Cohere(int index) {
 
 	if (count > 0)
 		//return SteerTo(index, distanceSum /= count);
-		return distanceSum /= count;
-	else
-		return distanceSum;
+		distanceSum /= count;
+
+	distanceSum = distanceSum.GetClampedToMaxSize(maxForce);
+
+	return distanceSum;
+
 }
 
 // Used for sheep flocking
@@ -351,10 +409,13 @@ FVector AHerdActor::DogSeparate(int index) {
 	float d = dist.Size();
 	dist.Normalize();
 
+	FVector separation = FVector(0.0f, 0.0f, 0.0f);
 	if (d < dogDistance)
-		return dogDistance * dogDistance * dist / (d * d);
-	else
-		return FVector(0.0f, 0.0f, 0.0f);
+		 separation = dogDistance * dogDistance * dist / (d * d);
+	
+	//separation = separation.GetClampedToMaxSize(maxForce);
+
+	return separation;
 }
 
 // Update sheep flocking behaviour
@@ -386,8 +447,16 @@ void AHerdActor::UpdateFlocking(float DeltaTime) {
 			+ separationVector[i] * separationWeight // Separation
 			+ dogSeparationVector[i] * dogSeparationWeight;
 
+		acceleration = acceleration.GetClampedToMaxSize(maxForce);
+
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d acceleration: %s"), i, *(acceleration.ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d alignment: %s"), i, *((speedDiff[i] * alignmentWeight).ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d cohesion: %s"), i, *((averagePosition[i] * cohesionWeight).ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d separataion: %s"), i, *((separationVector[i] * separationWeight).ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep %d sdogsepat: %s"), i, *((dogSeparationVector[i] * dogSeparationWeight).ToString()));
+
 		FVector oldVelocity = sheep->GetSheepVelocity();
-		FVector newVelocity = oldVelocity + acceleration * DeltaTime;
+		FVector newVelocity = (oldVelocity + acceleration * DeltaTime) * sheepFriction;
 		newVelocity = newVelocity.GetClampedToMaxSize(maxSpeed);
 		//UE_LOG(LogTemp, Warning, TEXT("Acceleration %s"), *acceleration.ToString());
 
@@ -425,6 +494,7 @@ FVector AHerdActor::GetHerdCenter() {
 
 FVector AHerdActor::GetHerdVelocity() {
 	FVector sum = FVector(0.0f, 0.0f, 0.0f);
+
 	for (int i = 0; i < sheepArray.Num(); i++) {
 		sum += sheepArray[i]->GetSheepVelocity();
 	}
@@ -493,5 +563,5 @@ void AHerdActor::SetGoalCenter() {
 	float centerX = bounds.Origin.X + bounds.BoxExtent.X / 2.0f;
 	float centerY = bounds.Origin.Y + bounds.BoxExtent.Y / 2.0f;
 
-	goalCenter = FVector2D(centerX, centerY);
+	goalCenter = FVector(centerX, centerY, 0.0f);
 }
