@@ -56,6 +56,8 @@ AHerdActor::AHerdActor()
 	maxTime = 10.0f;
 	fakeDeltaTime = 1.0f / 30.0f;
 
+	displayMode = false;
+
 	dog = NULL;
 	isSheepArraySet = false;
 
@@ -131,7 +133,7 @@ void AHerdActor::Tick( float DeltaTime )
 	//
 
 	//UE_LOG(LogTemp, Warning, TEXT("IM GONNA TRAIN!"));
-	if (isTraining && dog->useAI) {
+	if (isTraining && dog->useAI && !displayMode) {
 		for (int i = 0; i < population; i++) {
 			//// Give the dog a bone... I mean brain
 			dog->brain = brains[i];
@@ -168,6 +170,7 @@ void AHerdActor::Tick( float DeltaTime )
 
 			// Todo: Calculate fitness value
 			//brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
+			
 			brains[i]->CalcFitness(herdPos, goalCenter);
 
 			Reset();
@@ -177,40 +180,51 @@ void AHerdActor::Tick( float DeltaTime )
 		std::sort(brains.begin(), brains.end(), CompareBrain);
 
 		// Set the dog's brain to the one with the best fitness
-		dog->brain = brains[0];
 
-		if (currentGeneration % showGenerationInterval == 0) {
-			for (int i = 0; i < brains.size(); i++) {
-				UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+		if (dog->brain->GetFitness() <= brains[0]->GetFitness() && currentGeneration == 1) {
+			for (int i = floor(brains.size()/2.0f); i < brains.size(); i++) {
+				brains[i]->GenerateNewWeights(); // (mutationRate, mutationSize*2.0f);
+			}
+			UE_LOG(LogTemp, Warning, TEXT("Generates new weights for half of the brains"));
+		} else {
+			dog->brain = brains[0];
+
+			if (currentGeneration % showGenerationInterval == 0) {
+				/*for (int i = 0; i < brains.size(); i++) {
+					UE_LOG(LogTemp, Warning, TEXT("Brain #%d fitness: %f sorted"), i, brains[i]->GetFitness());
+				}*/
+
+				isTraining = false;
 			}
 
-			isTraining = false;
-		}
-
-		// Keep the best brains and replace the remaing brains with a random copy of the best brains
-		int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
+			// Keep the best brains and replace the remaing brains with a random copy of the best brains
+			int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
 		
-		for (int i = selectedPop; i < brains.size(); i++){
-			// random parents in range 0 -> selectedPop
-			int randParent1 = rand() % (int)(selectedPop + 1);
-			int randParent2 = rand() % (int)(selectedPop + 1);
-			// Parents creates a new child with coin toss
-			brains[i]->Crossover(brains[randParent1], brains[randParent2]);
-			// Mutate the new brain
-			// float mutationRate; - The probability that a weight will get mutated
-			// float mutationSize; - The stdev of the noise added when mutating
-			brains[i]->Mutate(mutationRate, mutationSize);
-		}
+			for (int i = selectedPop; i < brains.size(); i++){
+				// random parents in range 0 -> selectedPop
+				int randParent1 = rand() % (int)(selectedPop + 1);
+				int randParent2 = rand() % (int)(selectedPop + 1);
+				// Parents creates a new child with coin toss
+				brains[i]->Crossover(brains[randParent1], brains[randParent2]);
+				// Mutate the new brain
+				// float mutationRate; - The probability that a weight will get mutated
+				// float mutationSize; - The stdev of the noise added when mutating
+				brains[i]->Mutate(mutationRate, mutationSize);
+			}
 
-		if (isTraining) {
-			//dog->SetRandomStartLocation(fenceBox->Bounds);
-			currentGeneration++;
+			if (isTraining) {
+				//dog->SetRandomStartLocation(fenceBox->Bounds);
+				currentGeneration++;
+			}
 		}
 	}
 	// If not training:
 	// Show off the best dog from the current generation. Then train some more!
 	else {
-		
+		if (displayMode) {
+			dog->brain = brains[0];
+		}
+
 		if (dog->useAI && dog->brain) {
 			// Set neural network inputs
 			FVector dogPos = dog->GetActorLocation();
@@ -230,6 +244,7 @@ void AHerdActor::Tick( float DeltaTime )
 			if (dog->useAI && dog->brain) {
 				dog->brain->CalcFitness(herdPos, goalCenter);
 				UE_LOG(LogTemp, Warning, TEXT("Best brain fitness: %f"), dog->brain->GetFitness());
+				dog->brain->PrintWeights();
 				//UE_LOG(LogTemp, Warning, TEXT("Best brain wieghts:"));
 				//dog->brain->PrintWeights();
 			}
@@ -562,8 +577,9 @@ bool AHerdActor::AreAllSheepInGoal() {
 void AHerdActor::SetGoalCenter() {
 	FBoxSphereBounds bounds = goalBox->Bounds;
 
-	float centerX = bounds.Origin.X + bounds.BoxExtent.X / 2.0f;
-	float centerY = bounds.Origin.Y + bounds.BoxExtent.Y / 2.0f;
+	float centerX = bounds.Origin.X;
+	float centerY = bounds.Origin.Y;
 
 	goalCenter = FVector(centerX, centerY, 0.0f);
+	UE_LOG(LogTemp, Warning, TEXT("Goal center plopp %s"), *(goalCenter.ToString()));
 }

@@ -11,6 +11,14 @@ Brain::Brain() {
 		currentScaledInput[i] = 0.0f;
 	}
 
+	float savedWeights[8 * 4] = { -0.971191f, -0.435713f, 0.103305f, 0.907848f, 0.013398f,
+		0.904172f, -0.692312f, -0.408124f, 0.751945f, -0.251645f,
+		0.396253f, 0.491375f, -0.873898f, 0.379559f, 0.925474f,
+		-0.816645f, -0.930395f, 0.29731f, 0.81225f, -0.014801f,
+		0.504051f, 0.341801f, -0.651357f, -0.296364f, 0.640154f,
+		-0.008679f, 0.156167f, 0.339674f, -0.02877f, 0.828425f,
+		0.259186f, -0.506021f };
+
 	for (int i = 0; i < numWeights; i++) {
 		weights[i] = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 2.0f)); // Random value between -1.0 and 1.0
 	}
@@ -132,7 +140,18 @@ float Brain::GetWeight(int index) {
 }
 
 void Brain::PrintWeights() {
+	FString str = "";
 	for (int i = 0; i < numWeights; i++) {
-		UE_LOG(LogTemp, Warning, TEXT("Weight: %f"), weights[i]);
+		str += FString::SanitizeFloat(weights[i]);
+		if (i < numWeights - 1)
+			str += ",";
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("Weight: %s"), *str);
+}
+
+void Brain::GenerateNewWeights() {
+	for (int i = 0; i < numWeights; i++) {
+		weights[i] = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 2.0f)); // Random value between -1.0 and 1.0
 	}
 }

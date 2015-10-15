@@ -24,6 +24,7 @@ public:
 	float GetWeight(int index);
 
 	void PrintWeights();
+	void GenerateNewWeights();
 
 private:
 	static const int numOutput = 4; //Output: left, right, top, down
@@ -34,6 +35,7 @@ private:
 	float currentInput[numInput];
 	float currentScaledInput[numInput];
 	float weights[numWeights];
+
 
 	float fitness;
 

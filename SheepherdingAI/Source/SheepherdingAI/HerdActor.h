@@ -47,6 +47,8 @@ public:
 private:
 	// Set flocking properties from the editor
 	UPROPERTY(EditAnywhere)
+	bool displayMode;
+	UPROPERTY(EditAnywhere)
 	float separationWeight;
 	UPROPERTY(EditAnywhere)
 	float alignmentWeight;
