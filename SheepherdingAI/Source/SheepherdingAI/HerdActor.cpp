@@ -74,195 +74,6 @@ void AHerdActor::BeginPlay()
 	}
 }
 
-void AHerdActor::Reset() {
-	//For each sheep in sheepArray
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		sheepArray[i]->Reset();
-	}
-
-	if (!dog) {
-		//UE_LOG(LogTemp, Error, TEXT("Dog not set"));
-	}
-	else {
-		dog->Reset();
-	}
-
-	currentTime = 0.0f;
-}
-
-// Used for sheep flocking
-FVector AHerdActor::Separate(int index) {
-	FVector separationSum = FVector(0.0f, 0.0f, 0.0f);
-	ASheepPawn* sheep = sheepArray[index];
-
-	int count = 0;
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		if (i != index) {
-			// Distance between this sheep and other sheep
-			FVector dist = sheep->GetActorLocation() - sheepArray[i]->GetActorLocation();
-			float d = dist.Size();
-			if (d > 0 && d < desiredSeparation) {
-				dist.Normalize();
-				separationSum += dist / (d / desiredSeparation);
-				count++;
-			}
-		}
-	}
-	
-	if (count > 0)
-		separationSum /= count;
-
-	return separationSum;
-}
-
-// Used for sheep flocking
-FVector AHerdActor::Align(int index) {
-	FVector meanVelocity = FVector(0.0f, 0.0f, 0.0f);
-	ASheepPawn* sheep = sheepArray[index];
-
-	int count = 0;
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		if (i != index) {
-			// Distance between this sheep and other sheep
-			FVector dist = sheepArray[i]->GetActorLocation() - sheep->GetActorLocation();
-			float d = dist.Size();
-			if (d > 0 && d < alignmentDistance) {
-				meanVelocity += sheepArray[i]->GetSheepVelocity();
-				//UE_LOG(LogTemp, Warning, TEXT("Meanvelocity is %s"), *(meanVelocity.ToString()));
-				count++;
-			}
-		}
-	}
-
-	if (count > 0)
-		meanVelocity /= count;
-
-	meanVelocity = meanVelocity.GetClampedToMaxSize(maxForce);
-
-	return meanVelocity;
-
-}
-
-// Used for sheep flocking
-FVector AHerdActor::Cohere(int index) {
-	FVector distanceSum = FVector(0.0f, 0.0f, 0.0f);
-	ASheepPawn* sheep = sheepArray[index];
-	int count = 0;
-
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		if (i != index) {
-			FVector dist = sheepArray[i]->GetActorLocation() - sheep->GetActorLocation();
-			float d = dist.Size();
-			if (d < cohesionDistance) {
-				distanceSum += dist;
-				count++;
-			}
-		}
-	}
-	
-	if (count > 0)
-		//return SteerTo(index, distanceSum /= count);
-		return distanceSum /= count;
-	else
-		return distanceSum;
-}
-
-// Used for sheep flocking
-FVector AHerdActor::SteerTo(int index, FVector target) {
-	FVector pos = sheepArray[index]->GetActorLocation();
-	FVector velocity = sheepArray[index]->GetSheepVelocity();
-
-	FVector desired = target - pos;
-	float d = desired.Size();
-	
-	FVector steer;
-	if (d > 0) {
-		desired.Z = 0.0f;
-		desired.Normalize();
-
-		if (d < cohesionDamping) {
-			desired *= maxSpeed * (d / cohesionDamping);
-		}
-		else {
-			desired *= maxSpeed;
-		}
-
-		steer = desired - velocity;
-		steer = steer.GetClampedToMaxSize(maxForce);
-	}
-	else
-		steer = FVector(0.0f, 0.0f, 0.0f);
-
-	return steer;		
-}
-
-// Used for sheep flocking
-FVector AHerdActor::DogSeparate(int index) {
-	ASheepPawn* sheep = sheepArray[index];
-	FVector dist = sheep->GetActorLocation() - dog->GetActorLocation();
-	dist.Z = 0.0;
-	float d = dist.Size();
-	dist.Normalize();
-
-	if (d < dogDistance)
-		return dogDistance * dogDistance * dist / (d * d);
-	else
-		return FVector(0.0f, 0.0f, 0.0f);
-}
-
-// Update sheep flocking behaviour
-void AHerdActor::UpdateFlocking(float DeltaTime) {
-	// Variables
-	std::vector<FVector> speedDiff;
-	speedDiff.reserve(sheepArray.Num());
-	std::vector<FVector> averagePosition;
-	averagePosition.reserve(sheepArray.Num());
-	std::vector<FVector> separationVector;
-	separationVector.reserve(sheepArray.Num());
-	std::vector<FVector> dogSeparationVector;
-	dogSeparationVector.reserve(sheepArray.Num());
-
-	//For each sheep in sheepArray
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		ASheepPawn* sheep = sheepArray[i];
-		speedDiff[i] = Align(i);
-		averagePosition[i] = Cohere(i);
-		separationVector[i] = Separate(i);
-		dogSeparationVector[i] = DogSeparate(i);
-	}
-
-	for (int i = 0; i < sheepArray.Num(); i++) {
-		ASheepPawn* sheep = sheepArray[i];
-
-		FVector acceleration = speedDiff[i] * alignmentWeight // Alignment
-			+ averagePosition[i] * cohesionWeight // Cohesion
-			+ separationVector[i] * separationWeight // Separation
-			+ dogSeparationVector[i] * dogSeparationWeight;
-
-		FVector oldVelocity = sheep->GetSheepVelocity();
-		FVector newVelocity = oldVelocity + acceleration * DeltaTime;
-		newVelocity = newVelocity.GetClampedToMaxSize(maxSpeed);
-		//UE_LOG(LogTemp, Warning, TEXT("Acceleration %s"), *acceleration.ToString());
-
-		FVector oldLocation = sheep->GetActorLocation();
-		FVector newLocation = oldLocation + newVelocity * DeltaTime;
-
-		//if (IsSphereInBounds(newLocation, 50.0f, fenceBox->Bounds)) {
-			sheepArray[i]->SetActorLocation(newLocation);
-		//}
-		sheepArray[i]->SetSheepVelocity(newVelocity);
-
-		//UE_LOG(LogTemp, Warning, TEXT("Sheep's old location is %s"), *(oldLocation.ToString()));
-		//UE_LOG(LogTemp, Warning, TEXT("Sheep's new location is %s"), *(newLocation.ToString()));
-		//UE_LOG(LogTemp, Warning, TEXT("Sheep's avoidanceVec is %s"), *(separationVector[i].ToString()));
-	}
-
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Alignment: " + (speedDiff[0] * alignmentWeight).ToString()));
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Cohesion: " + (averagePosition[0] * cohesionWeight).ToString()));
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Separation: " + (separationVector[0] * separationWeight).ToString()));
-	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Dog separation: " + (dogSeparationVector[0] * dogSeparationWeight).ToString()));
-}
-
 // Called every frame
 void AHerdActor::Tick( float DeltaTime )
 {
@@ -328,9 +139,10 @@ void AHerdActor::Tick( float DeltaTime )
 				//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
 
 				// Set neural network inputs
-				FVector sheepPos = sheepArray[0]->GetActorLocation();
-				FVector sheepVelocity = sheepArray[0]->GetVelocity();
-				brains[i]->SetCurrentInput(sheepPos.X, sheepPos.Y, sheepVelocity.X, sheepVelocity.Y, goalCenter.X, goalCenter.Y);
+				FVector dogPos = dog->GetActorLocation();
+				FVector herdPos = GetHerdCenter();
+				FVector herdVelocity = GetHerdVelocity();
+				brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
 
 				// Feed forward, i.e. calculate new outputs from the inputs
 				brains[i]->Forward();
@@ -349,12 +161,11 @@ void AHerdActor::Tick( float DeltaTime )
 
 			FVector dogPos = dog->GetActorLocation();
 			//UE_LOG(LogTemp, Warning, TEXT("Dog's location is %s"), *(dogPos.ToString()));
-			FVector sheepPos = sheepArray[0]->GetActorLocation();
-			//UE_LOG(LogTemp, Warning, TEXT("Sheep's location is %s"), *(sheepPos.ToString()));
-			FVector sheepVelocity = sheepArray[0]->GetVelocity();
+			FVector herdPos = GetHerdCenter();
+			FVector herdVelocity = GetHerdVelocity();
 
 			// Todo: Calculate fitness value
-			brains[i]->SetCurrentInput(sheepPos[0], sheepPos[1], sheepVelocity[0], sheepVelocity[1], goalCenter[0], goalCenter[1]);
+			brains[i]->SetCurrentInput(herdPos.X - dogPos.X, herdPos.Y - dogPos.Y, herdVelocity.X, herdVelocity.Y, goalCenter.X - dogPos.X, goalCenter.Y - dogPos.Y);
 			brains[i]->CalcFitness();
 
 			Reset();
@@ -408,6 +219,254 @@ TArray<class ASheepPawn*> AHerdActor::GetSheepArray() {
 
 UBoxComponent* AHerdActor::GetFenceBox() {
 	return fenceBox;
+}
+
+void AHerdActor::Reset() {
+	//For each sheep in sheepArray
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		sheepArray[i]->Reset();
+	}
+
+	if (!dog) {
+		//UE_LOG(LogTemp, Error, TEXT("Dog not set"));
+	}
+	else {
+		dog->Reset();
+	}
+
+	currentTime = 0.0f;
+}
+
+// Used for sheep flocking
+FVector AHerdActor::Separate(int index) {
+	FVector separationSum = FVector(0.0f, 0.0f, 0.0f);
+	ASheepPawn* sheep = sheepArray[index];
+
+	int count = 0;
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		if (i != index) {
+			// Distance between this sheep and other sheep
+			FVector dist = sheep->GetActorLocation() - sheepArray[i]->GetActorLocation();
+			float d = dist.Size();
+			if (d > 0 && d < desiredSeparation) {
+				dist.Normalize();
+				separationSum += dist / (d / desiredSeparation);
+				count++;
+			}
+		}
+	}
+
+	if (count > 0)
+		separationSum /= count;
+
+	return separationSum;
+}
+
+// Used for sheep flocking
+FVector AHerdActor::Align(int index) {
+	FVector meanVelocity = FVector(0.0f, 0.0f, 0.0f);
+	ASheepPawn* sheep = sheepArray[index];
+
+	int count = 0;
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		if (i != index) {
+			// Distance between this sheep and other sheep
+			FVector dist = sheepArray[i]->GetActorLocation() - sheep->GetActorLocation();
+			float d = dist.Size();
+			if (d > 0 && d < alignmentDistance) {
+				meanVelocity += sheepArray[i]->GetSheepVelocity();
+				//UE_LOG(LogTemp, Warning, TEXT("Meanvelocity is %s"), *(meanVelocity.ToString()));
+				count++;
+			}
+		}
+	}
+
+	if (count > 0)
+		meanVelocity /= count;
+
+	meanVelocity = meanVelocity.GetClampedToMaxSize(maxForce);
+
+	return meanVelocity;
+
+}
+
+// Used for sheep flocking
+FVector AHerdActor::Cohere(int index) {
+	FVector distanceSum = FVector(0.0f, 0.0f, 0.0f);
+	ASheepPawn* sheep = sheepArray[index];
+	int count = 0;
+
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		if (i != index) {
+			FVector dist = sheepArray[i]->GetActorLocation() - sheep->GetActorLocation();
+			float d = dist.Size();
+			if (d < cohesionDistance) {
+				distanceSum += dist;
+				count++;
+			}
+		}
+	}
+
+	if (count > 0)
+		//return SteerTo(index, distanceSum /= count);
+		return distanceSum /= count;
+	else
+		return distanceSum;
+}
+
+// Used for sheep flocking
+FVector AHerdActor::SteerTo(int index, FVector target) {
+	FVector pos = sheepArray[index]->GetActorLocation();
+	FVector velocity = sheepArray[index]->GetSheepVelocity();
+
+	FVector desired = target - pos;
+	float d = desired.Size();
+
+	FVector steer;
+	if (d > 0) {
+		desired.Z = 0.0f;
+		desired.Normalize();
+
+		if (d < cohesionDamping) {
+			desired *= maxSpeed * (d / cohesionDamping);
+		}
+		else {
+			desired *= maxSpeed;
+		}
+
+		steer = desired - velocity;
+		steer = steer.GetClampedToMaxSize(maxForce);
+	}
+	else
+		steer = FVector(0.0f, 0.0f, 0.0f);
+
+	return steer;
+}
+
+// Used for sheep flocking
+FVector AHerdActor::DogSeparate(int index) {
+	ASheepPawn* sheep = sheepArray[index];
+	FVector dist = sheep->GetActorLocation() - dog->GetActorLocation();
+	dist.Z = 0.0;
+	float d = dist.Size();
+	dist.Normalize();
+
+	if (d < dogDistance)
+		return dogDistance * dogDistance * dist / (d * d);
+	else
+		return FVector(0.0f, 0.0f, 0.0f);
+}
+
+// Update sheep flocking behaviour
+void AHerdActor::UpdateFlocking(float DeltaTime) {
+	// Variables
+	std::vector<FVector> speedDiff;
+	speedDiff.reserve(sheepArray.Num());
+	std::vector<FVector> averagePosition;
+	averagePosition.reserve(sheepArray.Num());
+	std::vector<FVector> separationVector;
+	separationVector.reserve(sheepArray.Num());
+	std::vector<FVector> dogSeparationVector;
+	dogSeparationVector.reserve(sheepArray.Num());
+
+	//For each sheep in sheepArray
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		ASheepPawn* sheep = sheepArray[i];
+		speedDiff[i] = Align(i);
+		averagePosition[i] = Cohere(i);
+		separationVector[i] = Separate(i);
+		dogSeparationVector[i] = DogSeparate(i);
+	}
+
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		ASheepPawn* sheep = sheepArray[i];
+
+		FVector acceleration = speedDiff[i] * alignmentWeight // Alignment
+			+ averagePosition[i] * cohesionWeight // Cohesion
+			+ separationVector[i] * separationWeight // Separation
+			+ dogSeparationVector[i] * dogSeparationWeight;
+
+		FVector oldVelocity = sheep->GetSheepVelocity();
+		FVector newVelocity = oldVelocity + acceleration * DeltaTime;
+		newVelocity = newVelocity.GetClampedToMaxSize(maxSpeed);
+		//UE_LOG(LogTemp, Warning, TEXT("Acceleration %s"), *acceleration.ToString());
+
+		FVector oldLocation = sheep->GetActorLocation();
+		FVector newLocation = oldLocation + newVelocity * DeltaTime;
+
+		//if (IsSphereInBounds(newLocation, 50.0f, fenceBox->Bounds)) {
+		sheepArray[i]->SetActorLocation(newLocation);
+		//}
+		sheepArray[i]->SetSheepVelocity(newVelocity);
+
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep's old location is %s"), *(oldLocation.ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep's new location is %s"), *(newLocation.ToString()));
+		//UE_LOG(LogTemp, Warning, TEXT("Sheep's avoidanceVec is %s"), *(separationVector[i].ToString()));
+	}
+
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Alignment: " + (speedDiff[0] * alignmentWeight).ToString()));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Cohesion: " + (averagePosition[0] * cohesionWeight).ToString()));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Separation: " + (separationVector[0] * separationWeight).ToString()));
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Dog separation: " + (dogSeparationVector[0] * dogSeparationWeight).ToString()));
+}
+
+FVector AHerdActor::GetHerdCenter() {
+	FVector sum = FVector(0.0f, 0.0f, 0.0f);
+
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		sum += sheepArray[i]->GetActorLocation();
+	}
+
+	if (sheepArray.Num() > 0)
+		return sum / sheepArray.Num();
+	else
+		return sum;
+}
+
+FVector AHerdActor::GetHerdVelocity() {
+	FVector sum = FVector(0.0f, 0.0f, 0.0f);
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		sum += sheepArray[i]->GetSheepVelocity();
+	}
+
+	if (sheepArray.Num() > 0)
+		return sum / sheepArray.Num();
+	else
+		return sum;
+}
+
+// Get how much the herd is seperated
+float AHerdActor::GetHerdSpread() {
+	// Variables
+	std::vector<float> distance(sheepArray.Num());
+	//distance.reserve(sheepArray.Num());
+
+	// Calculate distance from one sheep to all the others
+	// Sum and return
+	float dist = 0.0f;
+	for (int i = 0; i < sheepArray.Num(); i++) {
+		distance[i] = 0.0f;
+		ASheepPawn* sheep = sheepArray[i];
+		// 
+
+		for (int j = 0; j < sheepArray.Num(); j++) {
+			if (i != j) {
+				FVector distVec = sheepArray[j]->GetActorLocation() - sheep->GetActorLocation();
+				dist += distVec.Size();
+			}
+		}
+		distance[i] = dist;
+	}
+	// GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Sheeplocation: " + distance.size())); // FString::SanitizeFloat()
+
+	//UE_LOG(LogTemp, Warning, TEXT("Dist: %d"), distance.size());
+	float distanceTotal = 0.0f;
+	for (int i = 0; i < distance.size(); i++) {
+		distanceTotal += distance[i];
+
+	}
+
+	return distanceTotal;
 }
 
 bool AHerdActor::IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds) {

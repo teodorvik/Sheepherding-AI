@@ -69,8 +69,6 @@ private:
 	UPROPERTY(EditAnywhere)
 	float dogSeparationWeight;
 
-	FVector2D goalCenter;
-
 	// Learning
 	bool isTraining;
 	int currentGeneration;
@@ -94,6 +92,8 @@ private:
 	ADogAIPawn* dog;
 	std::vector<Brain*> brains;
 
+	FVector2D goalCenter;
+
 	// Flocking stuff
 	FVector Separate(int index);
 	FVector Align(int index);
@@ -101,6 +101,10 @@ private:
 	FVector DogSeparate(int index);
 	FVector SteerTo(int index, FVector target);
 	void UpdateFlocking(float DeltaTime);
+
+	FVector GetHerdCenter();
+	FVector GetHerdVelocity();
+	float GetHerdSpread();
 
 	bool IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds);
 	bool AreAllSheepInGoal();

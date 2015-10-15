@@ -44,13 +44,8 @@ public:
 
 private:
 	FVector startLocation;
-	FVector herdCenter;
-	float herdDistanceWeight = 0.5f;
-	float herdSpreadWeight = 0.5f;
 	TArray<class ASheepPawn*> sheepArray;
 	UBoxComponent* box;
 
-	float HerdSpread();
-	float HerdDistanceToGoal();
 	bool IsSphereInBounds(FVector position, float radius, FBoxSphereBounds bounds);
 };
