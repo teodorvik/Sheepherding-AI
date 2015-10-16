@@ -213,17 +213,25 @@ void AHerdActor::Tick( float DeltaTime )
 			// Keep the best brains and replace the remaing brains with a random copy of the best brains
 			int selectedPop = floor((float)population * elitePercentage); // Calc selected pop
 		
-			for (int i = selectedPop; i < brains.size(); i++){
+			for (int i = selectedPop; i < brains.size(); i += 2){
 				// random parents in range 0 -> selectedPop
 				int randParent1 = rand() % (int)(selectedPop + 1);
 				int randParent2 = rand() % (int)(selectedPop + 1);
-				// Parents creates a new child with coin toss
-				brains[i]->Crossover(brains[randParent1], brains[randParent2]);
+				// Parents creates two new child with random crossover point
+				float crossoverPoint = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX));
+				brains[i]->Crossover(brains[randParent1], brains[randParent2], crossoverPoint);
+				
+				if (i + 1 < brains.size())
+					brains[i + 1]->Crossover(brains[randParent2], brains[randParent1], crossoverPoint);
+
 				//brains[i]->CopyWeights(brains[randParent1]);
 				// Mutate the new brain
 				// float mutationRate; - The probability that a weight will get mutated
 				// float mutationSize; - The stdev of the noise added when mutating
 				brains[i]->Mutate(mutationRate, mutationSize);
+				
+				if (i + 1 < brains.size())
+					brains[i + 1]->Mutate(mutationRate, mutationSize);
 			}
 
 			// Check if it's time to show a real time generation
@@ -244,6 +252,7 @@ void AHerdActor::Tick( float DeltaTime )
 	else {
 		if (displayMode) {
 			dog->brain = brains[0];
+			dog->brain->UseSavedWeights();
 		}
 
 		if (dog->useAI && dog->brain) {

@@ -19,11 +19,12 @@ public:
 	void PrintBrainStuff(int index);
 	void Mutate(float mutationRate, float mutationSize);
 	void CopyWeights(Brain* brain);
-	void Crossover(Brain* parent1, Brain* parent2);
+	void Crossover(Brain* parent1, Brain* parent2, float cp);
 	float GetWeight(int index);
 
 	void PrintWeights();
 	void GenerateNewWeights();
+	void UseSavedWeights();
 
 private:
 	static const int numOutput = 2; //Output: up/down, left/right

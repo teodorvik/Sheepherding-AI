@@ -11,14 +11,10 @@ Brain::Brain() {
 		currentScaledInput[i] = 0.0f;
 	}
 
-	//float savedWeights[numWeights] = { -0.752433, 0.473952, 0.191626, 0.315799, 0.039367, -0.470956, 0.376019, 0.117102, -0.299907, -0.113533, -0.046327, 0.768895, -0.662038, -0.829853, -0.429996, -0.869765 };
-	//float savedWeights2[numWeights] = { -1.084013, -0.759483, -0.412179, 0.305144, -0.627215, -0.101509, 0.884981, 0.607456, 0.647314, 1.016176, -0.100977, -0.457002, -0.365576, -0.899831, -0.34397, -0.883111, -0.447946, 0.792368, 0.025067, 0.984023, -0.394316, 0.177593, -0.038433, 0.598204, 0.933644, 0.398193, 0.924528, 0.626442, -0.109402, 0.30038, 0.989513, 0.565212, -0.132911, 0.253132, 0.132787, -0.983391, -0.742534, 0.334375, -0.003344, -0.513911, -0.819379, 0.938409, 0.306985, 1.007127, -0.139634, -0.048986, -0.306272, -0.614783, -0.759532, 0.802081, -0.385568, -0.791442, 0.117424, 0.848693, -0.11938, -0.283789, -0.166478, 0.45866, -0.960309, 0.702638, 0.871612, 0.360853, -0.873479, 0.551686, 0.588662 };
-	float savedWeights[numWeights] = {-0.006187, 0.452003, -0.117858, -0.334867, 0.299361, 0.160287, 0.522738, 0.016084, 0.467007, 0.023428, -0.048278, 0.328429 };
-
 	for (int i = 0; i < numWeights; i++) {
 		//weights[i] = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 2.0f)); // Random value between -1.0 and 1.0
-		weights[i] = savedWeights[i];
-		//weights[i] = -0.4f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 0.8f)); // Random value between -0.4 and 0.4
+		//weights[i] = savedWeights[i];
+		weights[i] = -0.6f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 1.2f)); // Random value between -0.6 and 0.6
 	}
 
 	fitness = 0.0f;
@@ -103,8 +99,8 @@ void Brain::Mutate(float mutationRate, float mutationSize) {
 	}
 }
 
-void Brain::Crossover(Brain* parent1, Brain* parent2) {
-	float crossoverPoint = rand() % numWeights;
+void Brain::Crossover(Brain* parent1, Brain* parent2, float cp) {
+	int crossoverPoint = floor(cp * numWeights);
 	for (int i = 0; i < numWeights; i++) {
 		if (i < crossoverPoint) {
 			weights[i] = parent1->GetWeight(i);
@@ -139,5 +135,14 @@ void Brain::PrintWeights() {
 void Brain::GenerateNewWeights() {
 	for (int i = 0; i < numWeights; i++) {
 		weights[i] = -1.0f + static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 2.0f)); // Random value between -1.0 and 1.0
+	}
+}
+
+void Brain::UseSavedWeights() {
+	//float savedWeights[numWeights] = { -0.234074, 0.426328, 0.129288, -0.324169, 0.467343, -0.008483, 0.387657, 0.581568, 0.745026, -0.485241, -0.516814, 0.872033 };
+	float savedWeights[numWeights] = { -0.006187, 0.452003, -0.117858, -0.334867, 0.299361, 0.160287, 0.522738, 0.016084, 0.467007, 0.023428, -0.048278, 0.328429 };
+
+	for (int i = 0; i < numWeights; i++) {
+		weights[i] = savedWeights[i];
 	}
 }
